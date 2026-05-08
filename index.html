@@ -1089,32 +1089,6 @@ function admTab(t){
   if(t==="transfers")renderAdmTransfers();
 }
 
-let editingPlayerId=null;
-function editPhoto(pid, name){
-  editingPlayerId=pid;
-  // Create hidden file input and trigger it
-  let inp=document.getElementById('edit-photo-input');
-  if(!inp){
-    inp=document.createElement('input');
-    inp.type='file';inp.id='edit-photo-input';inp.accept='image/*';
-    inp.style.display='none';
-    inp.onchange=async()=>{
-      const file=inp.files[0];if(!file)return;
-      const btn=document.querySelector('[data-edit-id="'+editingPlayerId+'"]');
-      const compressed=await compressImage(file,200);
-      const url=await upload(compressed,Date.now()+'.webp');
-      if(url){
-        await pat('players',{photo_url:url},{id:editingPlayerId});
-        const p=players.find(x=>x.id===editingPlayerId);
-        if(p)p.photo_url=url;
-        renderAdmPlist();
-      }
-      inp.value='';
-    };
-    document.body.appendChild(inp);
-  }
-  inp.click();
-}
 function renderAdmPlayers(){
   document.getElementById("adm-players").innerHTML=`
     <div class="glass-dark" style="padding:20px;margin-bottom:16px">
