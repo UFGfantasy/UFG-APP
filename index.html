@@ -754,7 +754,7 @@ let swapSource=null;
 function renderBench(){
   const byPos=getBenchByPos();
   const el=document.getElementById("bench-view");if(!el)return;
-  el.innerHTML=POSITIONS.map(pos=>{
+  el.innerHTML=["GK","DEF","MID","ATT"].map(pos=>{
     const p=byPos[pos][0]||null;
     return`<div style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`}">
       ${p
