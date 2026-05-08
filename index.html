@@ -604,6 +604,11 @@ function setMgr(m){
 // SQUAD + PITCH
 async function loadSquad(){
   if(!mgr){go("join");return;}
+  // Load players if not cached
+  if(!players.length){
+    const p=await cachedGet("players","players",{select:"*",order:"country,position"});
+    players=Array.isArray(p)?p:[];
+  }
   const[mgrRes,sqRes,bnRes,settings]=await Promise.all([
     get("managers",{select:"*",eq:{id:mgr.id}}),
     get("squads",{select:"player_id",eq:{manager_id:mgr.id}}),
@@ -707,10 +712,12 @@ function focusPos(pos){
 async function removeFromSquad(pid){
   if(mgr?.team_locked&&!transfersOpen){showMsg("🔒 Team is locked!");return;}
   if(mgr?.team_locked&&transfersOpen&&mgr.transfers_used>0){showMsg("🔒 Transfer already used!");return;}
+  // Optimistic update - instant UI
   squad=squad.filter(id=>id!==pid);
-  renderPitch();renderPlayerList();
+  renderPitch();
+  renderPlayerList(); // re-render immediately with updated squad
   showMsg("✓ Removed");
-  await del("squads",{manager_id:mgr.id,player_id:pid});
+  del("squads",{manager_id:mgr.id,player_id:pid}); // fire and forget
 }
 
 function getSquadByCountry(){
@@ -721,14 +728,14 @@ function getSquadByCountry(){
   });
   return byC;
 }
-function canAddCountry(country){
-  // Count both starters AND bench players for the limit
-  const allPlayers=[...squad,...bench];
-  const count=allPlayers.filter(id=>{
+function countryCount(country){
+  return [...squad,...bench].filter(id=>{
     const p=players.find(x=>x.id===id);
     return p&&p.country===country;
   }).length;
-  return count<3;
+}
+function canAddCountry(country){
+  return countryCount(country)<3;
 }
 function renderPlayerList(){
   const byPos=getSquadByPos();
@@ -750,11 +757,12 @@ function renderPlayerList(){
     const cnt=(byPos[p.position]||[]).length;
     let dis=false;
     if(selectingBench){
-      // In bench mode: disable if wrong pos, already on bench, or already starter
       dis=p.position!==selectingBench||onBench||sel;
     } else {
       const posLimitReached=!sel&&cnt>=SR[p.position];
-      const countryLimitReached=!sel&&!canAddCountry(p.country);
+      // Recalculate country count excluding this player if already selected
+      const cCount=countryCount(p.country);
+      const countryLimitReached=!sel&&cCount>=3;
       dis=(posLimitReached||countryLimitReached)&&!onBench;
     }
     const highlight=selectingBench&&p.position===selectingBench&&!onBench&&!sel;
