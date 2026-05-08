@@ -713,9 +713,10 @@ function renderPlayerList(){
   // filters
   if(fc==="Tous")fc=C[0];
   document.getElementById("cf").innerHTML=C.map(c=>({k:c,l:FL[c]})).map(({k,l})=>`<button class="ftab ${fc===k?"on":""}" onclick="sf('c','${k}')">${l}</button>`).join("");
-  document.getElementById("pf").innerHTML=["All",...P].map(p=>`<button class="ftab ${fp===p||("All"===p&&fp==="Tous")?"on":""}" onclick="sf('p','${"All"===p?"Tous":p}')">${p==="All"?"All":p} ${"All"!==p&&fp===p?"("+byPos[p].length+"/"+SR[p]+")":""}</button>`).join("");
+  if(fp==="Tous")fp="GK";
+  document.getElementById("pf").innerHTML=P.map(p=>`<button class="ftab ${fp===p?"on":""}" onclick="sf('p','${p}')">${p} ${fp===p?"("+byPos[p].length+"/"+SR[p]+")":""}</button>`).join("");
 
-  const filtered=players.filter(p=>(p.country===fc)&&(fp==="Tous"||p.position===fp));
+  const filtered=players.filter(p=>(p.country===fc)&&(p.position===fp));
   if(!filtered.length){
     document.getElementById("plist").innerHTML=`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:24px;font-weight:700">Aucun joueur trouvé</div>`;
     return;
