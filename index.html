@@ -612,7 +612,7 @@ function renderPitch(){
     const isGK=pos==="GK";
     return`<div class="pitch-row ${cls}" ${isGK?'style="background:rgba(0,0,0,0.15);margin:0 -10px;padding-left:10px;padding-right:10px"':''}>
       ${slotsArr.map(p=>p?`
-        <div class="pitch-slot" onclick="showPlayerModal('${p.id}')" oncontextmenu="event.preventDefault();removeFromSquad('${p.id}')">
+        <div class="pitch-slot" onclick="mgr?.team_locked?showPlayerModal('${p.id}'):removeFromSquad('${p.id}')">
           ${p.photo_url?`<img class="pitch-avatar" src="${e(p.photo_url)}" title="${e(p.name)}" style="${isGK?'border-color:var(--gk);box-shadow:0 0 12px rgba(245,158,11,0.5)':''}">
           `:`<div class="pitch-avatar-empty" style="${isGK?'border-color:var(--gk)':''}"> ${isGK?'🧤':FL[p.country]}</div>`}
           <div class="pitch-name">${e(p.name.split(" ")[0])}</div>
