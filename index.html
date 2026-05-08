@@ -804,16 +804,49 @@ async function removeBench(pid){
 }
 
 async function toggleP(pid){
-  if(mgr?.team_locked){showMsg("🔒 Team is locked!");return;}
+  if(mgr?.team_locked&&!transfersOpen){showMsg("🔒 Team is locked!");return;}
   const player=players.find(p=>p.id===pid);if(!player)return;
+
+  // BENCH MODE
+  if(selectingBench){
+    if(player.position!==selectingBench){showMsg("❌ Need a "+selectingBench+" for bench!");return;}
+    if(bench.includes(pid)){showMsg("Already on bench!");return;}
+    if(squad.includes(pid)){showMsg("Already a starter!");return;}
+    const benchByPos=getBenchByPos();
+    if((benchByPos[player.position]||[]).length>=BR[player.position]){
+      const old=benchByPos[player.position][0];
+      bench=bench.filter(id=>id!==old.id);
+      await del("bench",{manager_id:mgr.id,player_id:old.id});
+    }
+    bench.push(pid);
+    selectingBench=false;
+    const banner=document.getElementById("bench-select-banner");
+    if(banner)banner.style.display="none";
+    renderBench();renderPlayerList();showMsg("✓ Added to bench!");
+    await ups("bench",{manager_id:mgr.id,player_id:pid},"manager_id,player_id");
+    setTimeout(updateLockUI,0);
+    return;
+  }
+
+  // STARTER MODE
   const sel=squad.includes(pid);
+  const onBench=bench.includes(pid);
   const byPos=getSquadByPos();
+
   if(sel){
     squad=squad.filter(id=>id!==pid);
     renderPitch();renderPlayerList();showMsg("✓ Removed");
     await del("squads",{manager_id:mgr.id,player_id:pid});
+  }else if(onBench){
+    bench=bench.filter(id=>id!==pid);
+    renderBench();renderPlayerList();showMsg("✓ Removed from bench");
+    await del("bench",{manager_id:mgr.id,player_id:pid});
+    setTimeout(updateLockUI,0);
   }else{
     if((byPos[player.position]||[]).length>=SR[player.position])return;
+    if(!canAddCountry(player.country)){
+      showMsg("❌ Max 3 players from "+player.country+"!");return;
+    }
     squad.push(pid);
     renderPitch();renderPlayerList();showMsg("✓ Added!");
     await ups("squads",{manager_id:mgr.id,player_id:pid},"manager_id,player_id");
