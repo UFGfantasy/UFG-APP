@@ -745,7 +745,6 @@ function renderPlayerList(){
   const byPos=getSquadByPos();
   // filters
   document.getElementById("cf").innerHTML=[{k:"Tous",l:"🌍"},...C.map(c=>({k:c,l:FL[c]}))].map(({k,l})=>`<button class="ftab ${fc===k?"on":""}" onclick="sf('c','${k}')">${l}</button>`).join("");
-  if(fp==="Tous"||fp==="GK")fp="Tous";
   document.getElementById("pf").innerHTML=["Tous",...P].map(p=>`<button class="ftab ${fp===p?"on":""}" onclick="sf('p','${p}')">${p==="Tous"?"All":p} ${p!=="Tous"&&fp===p?"("+byPos[p].length+"/"+SR[p]+")":""}</button>`).join("");
 
   const filtered=players.filter(p=>(fc==="Tous"||p.country===fc)&&(fp==="Tous"||p.position===fp));
