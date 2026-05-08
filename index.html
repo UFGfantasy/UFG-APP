@@ -653,6 +653,20 @@ async function removeFromSquad(pid){
   await del("squads",{manager_id:mgr.id,player_id:pid});
 }
 
+function getSquadByCountry(){
+  const byC={};
+  squad.forEach(id=>{
+    const p=players.find(x=>x.id===id);
+    if(p){if(!byC[p.country])byC[p.country]=0;byC[p.country]++;}
+  });
+  return byC;
+}
+function canAddCountry(country){
+  const byC=getSquadByCountry();
+  const count=byC[country]||0;
+  const maxC=mgr&&mgr.supported_country===country?2:3;
+  return count<maxC;
+}
 function renderPlayerList(){
   const byPos=getSquadByPos();
   // filters
