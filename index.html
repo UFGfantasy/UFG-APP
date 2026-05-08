@@ -234,6 +234,10 @@ select.input option{background:#2d1060;color:#fff}
       🔒 Your team is locked — no more changes allowed
     </div>
     <div class="pbar"><div class="pfill" id="sq-bar" style="width:0%"></div></div>
+    <div id="country-limits" class="tag-row" style="margin-bottom:8px"></div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:10px;font-weight:700">
+      Max 2 players from your supported country · Max 3 from any other country
+    </div>
 
     <!-- PITCH -->
     <div class="pitch-wrap glass-dark" style="padding:0;margin-bottom:20px">
@@ -663,7 +667,9 @@ function renderPlayerList(){
   document.getElementById("plist").innerHTML=filtered.map(p=>{
     const sel=squad.includes(p.id);
     const cnt=(byPos[p.position]||[]).length;
-    const dis=!sel&&cnt>=SR[p.position];
+    const posLimitReached=!sel&&cnt>=SR[p.position];
+    const countryLimitReached=!sel&&!canAddCountry(p.country);
+    const dis=posLimitReached||countryLimitReached;
     return`<div class="player-row ${sel?"selected":""} ${dis?"disabled":""}" onclick="toggleP('${p.id}')">
       ${p.photo_url?`<img class="player-avatar" src="${e(p.photo_url)}">`:`<div class="player-avatar-ph">${FL[p.country]}</div>`}
       <span style="flex:1;font-weight:700;font-size:14px">${e(p.name)}</span>
