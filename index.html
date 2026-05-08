@@ -700,17 +700,22 @@ function getSquadByCountry(){
   return byC;
 }
 function canAddCountry(country){
-  const byC=getSquadByCountry();
-  const count=byC[country]||0;
+  // Count both starters AND bench players for the limit
+  const allPlayers=[...squad,...bench];
+  const count=allPlayers.filter(id=>{
+    const p=players.find(x=>x.id===id);
+    return p&&p.country===country;
+  }).length;
   return count<3;
 }
 function renderPlayerList(){
   const byPos=getSquadByPos();
   // filters
-  document.getElementById("cf").innerHTML=[{k:"Tous",l:"🌍"},...C.map(c=>({k:c,l:FL[c]}))].map(({k,l})=>`<button class="ftab ${fc===k?"on":""}" onclick="sf('c','${k}')">${l}</button>`).join("");
+  if(fc==="Tous")fc=C[0];
+  document.getElementById("cf").innerHTML=C.map(c=>({k:c,l:FL[c]})).map(({k,l})=>`<button class="ftab ${fc===k?"on":""}" onclick="sf('c','${k}')">${l}</button>`).join("");
   document.getElementById("pf").innerHTML=["All",...P].map(p=>`<button class="ftab ${fp===p||("All"===p&&fp==="Tous")?"on":""}" onclick="sf('p','${"All"===p?"Tous":p}')">${p==="All"?"All":p} ${"All"!==p&&fp===p?"("+byPos[p].length+"/"+SR[p]+")":""}</button>`).join("");
 
-  const filtered=players.filter(p=>(fc==="Tous"||p.country===fc)&&(fp==="Tous"||p.position===fp));
+  const filtered=players.filter(p=>(p.country===fc)&&(fp==="Tous"||p.position===fp));
   if(!filtered.length){
     document.getElementById("plist").innerHTML=`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:24px;font-weight:700">Aucun joueur trouvé</div>`;
     return;
@@ -812,6 +817,7 @@ async function toggleP(pid){
     if(player.position!==selectingBench){showMsg("❌ Need a "+selectingBench+" for bench!");return;}
     if(bench.includes(pid)){showMsg("Already on bench!");return;}
     if(squad.includes(pid)){showMsg("Already a starter!");return;}
+    if(!canAddCountry(player.country)){showMsg("❌ Max 3 players from "+player.country+"!");return;}
     const benchByPos=getBenchByPos();
     if((benchByPos[player.position]||[]).length>=BR[player.position]){
       const old=benchByPos[player.position][0];
