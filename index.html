@@ -422,21 +422,25 @@ async function upload(file,path){
 }
 
 // Compress image before upload
-async function compressImage(file,maxW=400){
-  // If PNG, return as-is to preserve transparency
-  if(file.type==="image/png") return file;
-  // For other formats, compress
+async function compressImage(file,maxW=200){
   return new Promise(res=>{
     const img=new Image();
     const url=URL.createObjectURL(file);
     img.onload=()=>{
       const canvas=document.createElement("canvas");
-      const ratio=Math.min(maxW/img.width,maxW/img.height,1);
-      canvas.width=img.width*ratio;canvas.height=img.height*ratio;
+      // Crop to square and resize to 200x200
+      const size=Math.min(img.width,img.height);
+      const sx=(img.width-size)/2;
+      const sy=(img.height-size)/2;
+      canvas.width=maxW;canvas.height=maxW;
       const ctx=canvas.getContext("2d");
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      canvas.toBlob(blob=>res(blob||file),"image/jpeg",0.88);
+      ctx.clearRect(0,0,maxW,maxW);
+      ctx.drawImage(img,sx,sy,size,size,0,0,maxW,maxW);
+      // Try WebP first, fallback to PNG for transparency
+      canvas.toBlob(blob=>{
+        if(blob&&blob.size<file.size)res(blob);
+        else res(file);
+      },"image/webp",0.82);
       URL.revokeObjectURL(url);
     };
     img.src=url;
@@ -1149,17 +1153,20 @@ async function addPlayer(){
   let photo_url=null;
   if(file){
     const compressed=await compressImage(file,400);
-    const ext=file.type==="image/png"?"png":"jpg";
+    const ext="webp";
     photo_url=await upload(compressed,Date.now()+"."+ext);
   }
   const res=await ins("players",{name,country,position,photo_url});
   if(Array.isArray(res)&&res[0]?.id){
     players.push(res[0]);
+    // Keep country & position, only reset name and photo for quick re-entry
     document.getElementById("np-name").value="";
     document.getElementById("np-photo").value="";
     document.getElementById("photo-prev").innerHTML="";
-    msg.textContent="✅ Player added!";msg.style.color="#10b981";msg.style.display="block";
-    setTimeout(()=>msg.style.display="none",2000);
+    document.getElementById("np-name").focus();
+    // Flash success
+    msg.textContent="✅ "+name+" added!";msg.style.color="#10b981";msg.style.display="block";
+    setTimeout(()=>msg.style.display="none",1500);
     renderAdmPlist();
   }else{
     msg.textContent="❌ Error, try again";msg.style.color="#ef4444";msg.style.display="block";
