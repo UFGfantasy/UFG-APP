@@ -283,6 +283,7 @@ select.input option{background:#2d1060;color:#fff}
 
     <!-- SELECTION PANEL -->
     <div class="glass-dark" style="padding:16px" id="selection-panel">
+      <div id="bench-select-banner" style="display:none;background:rgba(255,165,0,0.1);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:rgba(255,165,0,0.9);font-weight:700"></div>
       <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:12px">SELECT A PLAYER</div>
       <div class="filter-row" id="cf"></div>
       <div class="filter-row" id="pf"></div>
@@ -714,18 +715,29 @@ function renderPlayerList(){
     document.getElementById("plist").innerHTML=`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:24px;font-weight:700">Aucun joueur trouvé</div>`;
     return;
   }
+  const benchByPos2=getBenchByPos();
   document.getElementById("plist").innerHTML=filtered.map(p=>{
     const sel=squad.includes(p.id);
+    const onBench=bench.includes(p.id);
     const cnt=(byPos[p.position]||[]).length;
-    const posLimitReached=!sel&&cnt>=SR[p.position];
-    const countryLimitReached=!sel&&!canAddCountry(p.country);
-    const dis=posLimitReached||countryLimitReached;
-    return`<div class="player-row ${sel?"selected":""} ${dis?"disabled":""}" onclick="toggleP('${p.id}')">
+    let dis=false;
+    if(selectingBench){
+      // In bench mode: disable if wrong pos, already on bench, or already starter
+      dis=p.position!==selectingBench||onBench||sel;
+    } else {
+      const posLimitReached=!sel&&cnt>=SR[p.position];
+      const countryLimitReached=!sel&&!canAddCountry(p.country);
+      dis=(posLimitReached||countryLimitReached)&&!onBench;
+    }
+    const highlight=selectingBench&&p.position===selectingBench&&!onBench&&!sel;
+    return`<div class="player-row ${sel?"selected":""} ${onBench?"on-bench":""} ${dis?"disabled":""}" onclick="toggleP('${p.id}')" style="${highlight?"border-color:rgba(255,165,0,0.5);background:rgba(255,165,0,0.08)":""}">
       ${p.photo_url?`<img class="player-avatar" src="${e(p.photo_url)}">`:`<div class="player-avatar-ph">${FL[p.country]}</div>`}
       <span style="flex:1;font-weight:700;font-size:14px">${e(p.name)}</span>
       <span style="font-size:13px;margin-right:4px">${FL[p.country]}</span>
       <span class="pos pos-${p.position}">${p.position}</span>
       ${sel?`<span style="color:#10b981;font-size:16px;margin-left:6px">✓</span>`:""}
+      ${onBench?`<span style="color:rgba(255,165,0,0.8);font-size:12px;margin-left:6px;font-weight:700">BENCH</span>`:""}
+      ${highlight?`<span style="color:rgba(255,165,0,0.9);font-size:12px;margin-left:6px;font-weight:700">+ BENCH</span>`:""}
     </div>`;
   }).join("");
 }
@@ -768,9 +780,19 @@ function renderBench(){
 
 function startBenchSelect(pos){
   selectingBench=pos;
-  fp=pos;
+  fp="Tous";
+  const panel=document.getElementById("selection-panel");
+  const banner=document.getElementById("bench-select-banner");
+  if(banner)banner.style.display="block";
+  if(banner)banner.innerHTML=`🪑 Select a <strong>${pos}</strong> for your bench — <button onclick="cancelBenchSelect()" style="background:none;border:none;color:var(--orange);cursor:pointer;font-weight:800;font-size:13px">Cancel</button>`;
   renderPlayerList();
-  document.getElementById("selection-panel").scrollIntoView({behavior:"smooth",block:"nearest"});
+  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function cancelBenchSelect(){
+  selectingBench=false;
+  const banner=document.getElementById("bench-select-banner");
+  if(banner)banner.style.display="none";
+  renderPlayerList();
 }
 
 async function removeBench(pid){
