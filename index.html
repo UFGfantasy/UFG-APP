@@ -172,6 +172,7 @@ select.input option{background:#2d1060;color:#fff}
       <button class="tab" id="n-join" onclick="go('join')">🔐 Login</button>
       <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')">🧩 My Team</button></span>
       <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')">🔮 Predictions</button></span>
+      <button class="tab" id="n-players-standing" onclick="go('players-standing')">⭐ Players</button>
       <button class="tab" id="n-admin" onclick="go('admin')" style="margin-left:auto">⚙️</button>
     </div>
   </div>
@@ -304,6 +305,16 @@ select.input option{background:#2d1060;color:#fff}
   <div class="page" id="page-leaderboard">
     <div class="section-title">🏆 STANDINGS</div>
     <div id="lb-list"></div>
+  </div>
+
+  <!-- PLAYERS STANDING -->
+  <div class="page" id="page-players-standing">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="section-title" style="margin-bottom:0">⭐ PLAYERS RANKING</div>
+    </div>
+    <div class="filter-row" id="ps-pos-filter"></div>
+    <div class="filter-row" id="ps-country-filter"></div>
+    <div id="players-standing-list"></div>
   </div>
 
   <!-- ADMIN -->
@@ -521,6 +532,7 @@ function go(name){
   if(name==="pronostics")loadPros();
   if(name==="leaderboard")loadLB();
   if(name==="home")loadTop5();
+  if(name==="players-standing")loadPlayersStanding();
 }
 
 // Preload players in background after init
@@ -1464,6 +1476,70 @@ async function showManagerModal(managerId, username){
     ${rows.join("")}
     ${rows.length===0?`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;font-weight:700">No predictions yet</div>`:""}
   `;
+}
+
+let psPos="Tous", psCountry="Tous";
+
+async function loadPlayersStanding(){
+  if(!players.length){
+    const p=await cachedGet("players","players",{select:"*",order:"country,position"});
+    players=Array.isArray(p)?p:[];
+  }
+  const res=await get("player_stats",{select:"*"});
+  const statsMap={};
+  if(Array.isArray(res))res.forEach(s=>{statsMap[s.player_id]=s;lstats[s.player_id]=s;});
+
+  // Calculate points per player
+  const ranked=players.map(p=>{
+    const s=statsMap[p.id]||{};
+    let pts=0;
+    pts+=(s.goals||0)*PTS.goals;
+    pts+=(s.assists||0)*PTS.assists;
+    if(s.clean_sheet)pts+=PTS.clean_sheet;
+    pts+=(s.yellow_cards||0)*PTS.yellow_cards;
+    pts+=(s.red_cards||0)*PTS.red_cards;
+    return{...p,pts,goals:s.goals||0,assists:s.assists||0,clean_sheet:s.clean_sheet||false,yellow_cards:s.yellow_cards||0,red_cards:s.red_cards||0};
+  }).sort((a,b)=>b.pts-a.pts);
+
+  // Render filters
+  document.getElementById("ps-pos-filter").innerHTML=["Tous",...["GK","DEF","MID","ATT"]].map(p=>`
+    <button class="ftab ${psPos===p?"on":""}" onclick="psPos='${p}';loadPlayersStanding()">${p==="Tous"?"All":p}</button>`).join("");
+  document.getElementById("ps-country-filter").innerHTML=[{k:"Tous",l:"🌍"},...["France","Angleterre","Espagne","Italie","Hongrie","Allemagne"].map(c=>({k:c,l:FL[c]}))].map(({k,l})=>`
+    <button class="ftab ${psCountry===k?"on":""}" onclick="psCountry='${k}';loadPlayersStanding()">${l}</button>`).join("");
+
+  const filtered=ranked.filter(p=>
+    (psPos==="Tous"||p.position===psPos)&&
+    (psCountry==="Tous"||p.country===psCountry)
+  );
+
+  const colors=["#FFD700","#C0C0C0","#CD7F32"];
+  document.getElementById("players-standing-list").innerHTML=filtered.length===0
+    ?`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px;font-weight:700">No stats yet</div>`
+    :filtered.map((p,i)=>`
+      <div onclick="showPlayerModal('${p.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${i===0?"rgba(255,215,0,0.08)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,215,0,0.3)":i===1?"rgba(192,192,192,0.2)":i===2?"rgba(205,127,50,0.2)":"rgba(255,255,255,0.07)"};border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s">
+        <span style="font-family:'Bebas Neue';font-size:22px;width:32px;text-align:center;color:${colors[i]||"rgba(255,255,255,0.2)"}">${i+1}</span>
+        ${p.photo_url
+          ?`<img src="${e(p.photo_url)}" style="width:42px;height:42px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,255,255,0.15)">`
+          :`<div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">${FL[p.country]||"?"}</div>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:14px">${e(p.name)}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+            <span class="pos pos-${p.position}" style="font-size:10px">${p.position}</span>
+            <span style="font-size:11px;color:rgba(255,255,255,0.3)">${FL[p.country]||p.country}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          ${p.goals?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">⚽${p.goals}</span>`:""}
+          ${p.assists?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🎯${p.assists}</span>`:""}
+          ${p.clean_sheet?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🧤</span>`:""}
+          ${p.yellow_cards?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🟨${p.yellow_cards}</span>`:""}
+          ${p.red_cards?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🟥${p.red_cards}</span>`:""}
+        </div>
+        <div style="text-align:right;min-width:60px">
+          <span style="font-family:'Bebas Neue';font-size:22px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${p.pts}</span>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700">PTS</div>
+        </div>
+      </div>`).join("");
 }
 
 function closePlayerModal(e){
