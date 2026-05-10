@@ -495,10 +495,10 @@ async function init(){
 
 function renderPts(){
   const sections=[
-    {id:0,color:"var(--gk)",label:"🧤 GK",items:[["✅","Base","+7"],["🧤","Clean Sheet","+5"],["🛡️","Penalty Saved","+5"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
-    {id:1,color:"var(--def)",label:"🛡️ DEF",items:[["✅","Base","+5"],["⚽","Goal","+7"],["🎯","Assist","+3"],["🧤","Clean Sheet","+3"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
-    {id:2,color:"var(--mid)",label:"⚙️ MID",items:[["✅","Base","+3"],["⚽","Goal","+6"],["🎯","Assist","+5"],["🧤","Clean Sheet","+2"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
-    {id:3,color:"var(--att)",label:"⚡ ATT",items:[["✅","Base","+2"],["⚽","Goal","+5"],["🎯","Assist","+3"],["⚽⚽","Double Bonus","+5"],["⚽⚽⚽","Hat-trick Bonus","+10"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:0,color:"var(--gk)",label:"🧤 GK",items:[["✅","Base (per match)","+7"],["🧤","Clean Sheet","+5"],["🛡️","Penalty Saved","+5"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:1,color:"var(--def)",label:"🛡️ DEF",items:[["✅","Base (per match)","+5"],["⚽","Goal","+7"],["🎯","Assist","+3"],["🧤","Clean Sheet","+3"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:2,color:"var(--mid)",label:"⚙️ MID",items:[["✅","Base (per match)","+3"],["⚽","Goal","+6"],["🎯","Assist","+5"],["🧤","Clean Sheet","+2"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:3,color:"var(--att)",label:"⚡ ATT",items:[["✅","Base (per match)","+2"],["⚽","Goal","+5"],["🎯","Assist","+3"],["⚽⚽","Double Bonus","+5"],["⚽⚽⚽","Hat-trick Bonus","+10"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
   ];
   document.getElementById("pts-grid").innerHTML=`
     <div>
@@ -1332,6 +1332,7 @@ function renderEventAdmin(){
           </div>
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
             ${[
+              ["matches_played","✅","Matches Played",0,10],
               ["goals","⚽","Goals",0,30],
               ["assists","🎯","Assists",0,20],
               p.position==="ATT"?["doubles","⚽⚽","Doubles",0,10]:null,
@@ -1407,7 +1408,8 @@ async function savePlayerStat(pid){
     goals_conceded:s.goals_conceded||0,
     penalties_saved:s.penalties_saved||0,
     doubles:s.doubles||0,
-    hattricks:s.hattricks||0
+    hattricks:s.hattricks||0,
+    matches_played:s.matches_played||0
   },"player_id");
   if(btn){btn.textContent="✅ Saved!";setTimeout(()=>{if(btn){btn.textContent="💾 Save "+p.name;btn.disabled=false;}},1500);}
 }
@@ -1667,8 +1669,8 @@ function calcPlayerPoints(player, s){
   if(!player||!s) return 0;
   const pos=player.position;
   let pts=0;
-  // Base
-  pts+=PTS.base[pos]||0;
+  // Base - only for matches played as starter
+  pts+=(s.matches_played||0)*(PTS.base[pos]||0);
   // Goals
   const goals=s.goals||0;
   if(pos==="ATT"){
@@ -1719,7 +1721,7 @@ async function showPlayerModal(pid){
     goalPts=goals*(PTS.goal[pos]||0);
   }
   const statItems=[
-    {e:"✅",l:"Base",v:"-",pts:PTS.base[pos]||0,col:"#a78bfa"},
+    {e:"✅",l:"Base (x"+(s.matches_played||0)+" matches)",v:s.matches_played||0,pts:(s.matches_played||0)*(PTS.base[pos]||0),col:"#a78bfa"},
     {e:"⚽",l:"Goals",v:goals,pts:goalPts,col:"#f97316"},
     pos==="ATT"&&(s.doubles||0)>0?{e:"⚽⚽",l:"Double bonus",v:s.doubles||0,pts:(s.doubles||0)*5,col:"#f97316"}:null,
     pos==="ATT"&&(s.hattricks||0)>0?{e:"⚽⚽⚽",l:"Hat-trick bonus",v:s.hattricks||0,pts:(s.hattricks||0)*10,col:"#f97316"}:null,
