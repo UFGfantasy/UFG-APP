@@ -1152,7 +1152,7 @@ function doAdmLogin(){
 }
 function admLogout(){admIn=false;document.getElementById("adm-login").style.display="block";document.getElementById("adm-panel").style.display="none";}
 function admTab(t){
-  ["players","stats","results"].forEach(x=>{
+  ["players","stats","results","transfers"].forEach(x=>{
     document.getElementById("at-"+x).classList.toggle("on",x===t);
     document.getElementById("adm-"+x).style.display=x===t?"block":"none";
   });
