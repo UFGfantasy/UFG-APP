@@ -173,6 +173,7 @@ select.input option{background:#2d1060;color:#fff}
       <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')">🧩 My Team</button></span>
       <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')">🔮 Predictions</button></span>
       <button class="tab" id="n-players-standing" onclick="go('players-standing')">⭐ Players</button>
+      <button class="tab" id="n-rules" onclick="go('rules')">📋 Rules</button>
       <button class="tab" id="n-admin" onclick="go('admin')" style="margin-left:auto">⚙️</button>
     </div>
   </div>
@@ -190,7 +191,7 @@ select.input option{background:#2d1060;color:#fff}
       </div>
     </div>
 
-    <div class="pts-grid" id="pts-grid"></div>
+
 
     <div class="glass-dark" id="top5-wrap" style="display:none;padding:20px">
       <div class="section-title">🏆 TOP 5</div>
@@ -315,6 +316,12 @@ select.input option{background:#2d1060;color:#fff}
     <div class="filter-row" id="ps-pos-filter" style="margin-bottom:6px"></div>
     <div class="filter-row" id="ps-country-filter" style="margin-bottom:12px"></div>
     <div id="players-standing-list"></div>
+  </div>
+
+  <!-- RULES -->
+  <div class="page" id="page-rules">
+    <div class="section-title">📋 RULES & POINTS</div>
+    <div id="pts-grid"></div>
   </div>
 
   <!-- ADMIN -->
@@ -585,6 +592,7 @@ function go(name){
   if(name==="leaderboard")loadLB();
   if(name==="home")loadTop5();
   if(name==="players-standing")loadPlayersStanding();
+  if(name==="rules")renderPts();
 }
 
 // Preload players in background after init
