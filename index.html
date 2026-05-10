@@ -312,8 +312,8 @@ select.input option{background:#2d1060;color:#fff}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <div class="section-title" style="margin-bottom:0">⭐ PLAYERS RANKING</div>
     </div>
-    <div class="filter-row" id="ps-pos-filter"></div>
-    <div class="filter-row" id="ps-country-filter"></div>
+    <div class="filter-row" id="ps-pos-filter" style="margin-bottom:6px"></div>
+    <div class="filter-row" id="ps-country-filter" style="margin-bottom:12px"></div>
     <div id="players-standing-list"></div>
   </div>
 
@@ -1585,29 +1585,27 @@ async function loadPlayersStanding(){
   document.getElementById("players-standing-list").innerHTML=filtered.length===0
     ?`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px;font-weight:700">No stats yet</div>`
     :filtered.map((p,i)=>`
-      <div onclick="showPlayerModal('${p.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${i===0?"rgba(255,215,0,0.08)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,215,0,0.3)":i===1?"rgba(192,192,192,0.2)":i===2?"rgba(205,127,50,0.2)":"rgba(255,255,255,0.07)"};border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s">
-        <span style="font-family:'Bebas Neue';font-size:22px;width:32px;text-align:center;color:${colors[i]||"rgba(255,255,255,0.2)"}">${i+1}</span>
+      <div onclick="showPlayerModal('${p.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:${i===0?"rgba(255,215,0,0.08)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,215,0,0.3)":i===1?"rgba(192,192,192,0.2)":i===2?"rgba(205,127,50,0.2)":"rgba(255,255,255,0.07)"};border-radius:12px;margin-bottom:8px;cursor:pointer">
+        <span style="font-family:'Bebas Neue';font-size:20px;width:26px;text-align:center;color:${colors[i]||"rgba(255,255,255,0.2)"};flex-shrink:0">${i+1}</span>
         ${p.photo_url
-          ?`<img src="${e(p.photo_url)}" style="width:42px;height:42px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,255,255,0.15)">`
-          :`<div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">${FL[p.country]||"?"}</div>`}
+          ?`<img src="${e(p.photo_url)}" style="width:40px;height:40px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,255,255,0.15);flex-shrink:0">`
+          :`<div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">${FL[p.country]||"?"}</div>`}
         <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:14px">${e(p.name)}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-            <span class="pos pos-${p.position}" style="font-size:10px">${p.position}</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.3)">${FL[p.country]||p.country}</span>
+          <div style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(p.name)}</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:2px;flex-wrap:wrap">
+            <span class="pos pos-${p.position}" style="font-size:9px">${p.position}</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.3)">${FL[p.country]||p.country}</span>
+            ${p.goals?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">⚽${p.goals}</span>`:""}
+            ${p.doubles?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">x2×${p.doubles}</span>`:""}
+            ${p.hattricks?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">x3×${p.hattricks}</span>`:""}
+            ${p.assists?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🎯${p.assists}</span>`:""}
+            ${p.clean_sheets?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🧤${p.clean_sheets}</span>`:""}
+            ${p.penalties_saved?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🛡️${p.penalties_saved}</span>`:""}
+            ${p.yellow_cards?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🟨${p.yellow_cards}</span>`:""}
+            ${p.red_cards?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🟥${p.red_cards}</span>`:""}
           </div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          ${p.goals?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">⚽${p.goals}</span>`:""}
-          ${p.doubles?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">⚽⚽${p.doubles}</span>`:""}
-          ${p.hattricks?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">⚽⚽⚽${p.hattricks}</span>`:""}
-          ${p.assists?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🎯${p.assists}</span>`:""}
-          ${p.clean_sheets?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🧤${p.clean_sheets}</span>`:""}
-          ${p.penalties_saved?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🛡️${p.penalties_saved}</span>`:""}
-          ${p.yellow_cards?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🟨${p.yellow_cards}</span>`:""}
-          ${p.red_cards?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">🟥${p.red_cards}</span>`:""}
-        </div>
-        <div style="text-align:right;min-width:60px">
+        <div style="text-align:right;flex-shrink:0">
           <span style="font-family:'Bebas Neue';font-size:22px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${p.pts}</span>
           <div style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700">PTS</div>
         </div>
