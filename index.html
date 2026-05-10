@@ -1280,7 +1280,7 @@ function renderEventAdmin(){
               </div>
             </div>
             <div style="text-align:right">
-              <div style="font-family:'Bebas Neue';font-size:24px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${pts} pts</div>
+              <div style="font-family:'Bebas Neue';font-size:24px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent" data-pts="${p.id}">${pts} pts</div>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
@@ -1299,7 +1299,7 @@ function renderEventAdmin(){
                 <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700">${l}</div></div>
                 <div style="display:flex;align-items:center;gap:4px">
                   <button onclick="adjStat('${p.id}','${f}',-1,${min})" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(239,68,68,0.2);color:#ef4444;font-size:16px;cursor:pointer;font-weight:800">−</button>
-                  <span style="font-size:18px;font-weight:800;min-width:24px;text-align:center" id="sv-${p.id}-${f}">${s[f]||0}</span>
+                  <span style="font-size:18px;font-weight:800;min-width:24px;text-align:center" data-pid="${p.id}" data-field="${f}">${s[f]||0}</span>
                   <button onclick="adjStat('${p.id}','${f}',1,${max})" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(16,185,129,0.2);color:#10b981;font-size:16px;cursor:pointer;font-weight:800">+</button>
                 </div>
               </div>`).join("")}
@@ -1308,7 +1308,7 @@ function renderEventAdmin(){
               <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700">Clean Sheets</div></div>
               <div style="display:flex;align-items:center;gap:4px">
                 <button onclick="adjStat('${p.id}','clean_sheets',-1,0)" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(239,68,68,0.2);color:#ef4444;font-size:16px;cursor:pointer;font-weight:800">−</button>
-                <span style="font-size:18px;font-weight:800;min-width:24px;text-align:center;color:var(--yellow)" id="sv-${p.id}-clean_sheets">${s.clean_sheets||0}</span>
+                <span style="font-size:18px;font-weight:800;min-width:24px;text-align:center;color:var(--yellow)" data-pid="${p.id}" data-field="clean_sheets">${s.clean_sheets||0}</span>
                 <button onclick="adjStat('${p.id}','clean_sheets',1,50)" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(16,185,129,0.2);color:#10b981;font-size:16px;cursor:pointer;font-weight:800">+</button>
               </div>
             </div>
@@ -1325,11 +1325,19 @@ function renderEventAdmin(){
 
 function adjStat(pid,field,delta,min){
   if(!lstats[pid])lstats[pid]={};
-  const cur=typeof lstats[pid][field]==="number"?lstats[pid][field]:0;
+  const cur=typeof lstats[pid][field]==="number"?lstats[pid][field]:parseInt(lstats[pid][field])||0;
   const newVal=Math.max(min||0,cur+delta);
   lstats[pid][field]=newVal;
-  const el=document.getElementById("sv-"+pid+"-"+field);
+  // Find element using data attributes instead of complex ID
+  const el=document.querySelector(`[data-pid="${pid}"][data-field="${field}"]`);
   if(el)el.textContent=newVal;
+  // Update pts
+  const p=players.find(x=>x.id===pid);
+  if(p){
+    const pts=calcPlayerPoints(p,lstats[pid]);
+    const ptsEl=document.querySelector(`[data-pts="${pid}"]`);
+    if(ptsEl)ptsEl.textContent=pts+" pts";
+  }
 }
 
 function togCS2(pid){
