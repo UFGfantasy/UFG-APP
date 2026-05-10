@@ -1245,10 +1245,10 @@ async function renderAdmStats(reload=false){
     const p=await get("players",{select:"*",order:"country,position"});
     players=Array.isArray(p)?p:[];
   }
-  if(reload||Object.keys(lstats).length===0){
-    const res=await get("player_stats",{select:"*"});
-    if(Array.isArray(res))res.forEach(s=>{lstats[s.player_id]=s;});
-  }
+  // Always reload stats from DB to avoid stale cache
+  const res=await get("player_stats",{select:"*"});
+  lstats={};
+  if(Array.isArray(res))res.forEach(s=>{lstats[s.player_id]=s;});
   renderEventAdmin();
 }
 
