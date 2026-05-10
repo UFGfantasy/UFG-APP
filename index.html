@@ -384,7 +384,22 @@ const FL={
 };
 // CSHORT removed, using FL directly
 const PC={GK:"var(--gk)",DEF:"var(--def)",MID:"var(--mid)",ATT:"var(--att)"};
-const PTS={goals:5,assists:3,clean_sheet:6,yellow_cards:-2,red_cards:-5,pro:3,pro_exact:5};
+const PTS={
+  // Base points per position
+  base:{GK:7,DEF:5,MID:3,ATT:2},
+  // Actions
+  goal:{GK:0,DEF:7,MID:6,ATT:5},
+  double_bonus:2,   // extra for 2nd goal (ATT: 12 total = 5+5+2)
+  hattrick_bonus:3, // extra for 3rd goal (ATT: 18 total = 5+5+5+3)
+  assist:{GK:0,DEF:3,MID:5,ATT:3},
+  clean_sheet:{GK:5,DEF:3,MID:2,ATT:0},
+  goals_conceded:-1, // GK, DEF, MID
+  penalty_saved:5,   // GK only
+  yellow_card:-3,
+  red_card:-6,
+  pro:3,
+  pro_exact:5
+};
 const FORMATION={GK:[0],DEF:[1,2,3,4],MID:[5,6,7],ATT:[8,9,10]};
 
 let players=[],matches=[],squad=[],bench=[],pros={},mgr=null,transfersOpen=false;
@@ -487,8 +502,9 @@ function calcBoard(mgrs,sq,st,pr,mt){
     let pts=0;
     ids.forEach(pid=>{
       const s=(st||[]).find(x=>x.player_id===pid);
-      if(!s)return;
-      pts+=(s.goals||0)*PTS.goals+(s.assists||0)*PTS.assists+(s.clean_sheet?PTS.clean_sheet:0)+(s.yellow_cards||0)*PTS.yellow_cards+(s.red_cards||0)*PTS.red_cards;
+      const p=players.find(x=>x.id===pid);
+      if(!s||!p)return;
+      pts+=calcPlayerPoints(p,s);
     });
     (pr||[]).filter(p=>p.manager_id===m.id).forEach(p=>{
       const match=(mt||[]).find(x=>x.id===p.match_id);
@@ -1225,16 +1241,19 @@ async function rmPlayer(id){
 // ADMIN STATS
 let statsFilter="";
 async function renderAdmStats(reload=false){
-  // Always reload players to make sure we have them
   if(!players.length||reload){
     const p=await get("players",{select:"*",order:"country,position"});
     players=Array.isArray(p)?p:[];
   }
-  // Only load stats from DB on first load or explicit reload
   if(reload||Object.keys(lstats).length===0){
     const res=await get("player_stats",{select:"*"});
-    if(Array.isArray(res))res.forEach(s=>{lstats[s.player_id]=lstats[s.player_id]||s;});
+    if(Array.isArray(res))res.forEach(s=>{lstats[s.player_id]=s;});
   }
+  renderEventAdmin();
+}
+
+let eventAdminFilter="";
+function renderEventAdmin(){
 
   const el=document.getElementById("adm-stats");
   // Default to first country if no filter
@@ -1299,7 +1318,7 @@ async function saveAllStats(){
   btn.textContent="SAVING...";btn.disabled=true;
   for(const p of players){
     const s=lstats[p.id]||{};
-    await ups("player_stats",{player_id:p.id,goals:s.goals||0,assists:s.assists||0,clean_sheet:!!s.clean_sheet,yellow_cards:s.yellow_cards||0,red_cards:s.red_cards||0},"player_id");
+    await ups("player_stats",{player_id:p.id,goals:s.goals||0,assists:s.assists||0,clean_sheet:!!s.clean_sheet,yellow_cards:s.yellow_cards||0,red_cards:s.red_cards||0,goals_conceded:s.goals_conceded||0,penalties_saved:s.penalties_saved||0},"player_id");
   }
   btn.textContent="💾 SAVE ALL STATS";btn.disabled=false;
   msg.textContent="✅ All stats saved!";msg.style.color="#10b981";msg.style.display="block";
@@ -1492,13 +1511,8 @@ async function loadPlayersStanding(){
   // Calculate points per player
   const ranked=players.map(p=>{
     const s=statsMap[p.id]||{};
-    let pts=0;
-    pts+=(s.goals||0)*PTS.goals;
-    pts+=(s.assists||0)*PTS.assists;
-    if(s.clean_sheet)pts+=PTS.clean_sheet;
-    pts+=(s.yellow_cards||0)*PTS.yellow_cards;
-    pts+=(s.red_cards||0)*PTS.red_cards;
-    return{...p,pts,goals:s.goals||0,assists:s.assists||0,clean_sheet:s.clean_sheet||false,yellow_cards:s.yellow_cards||0,red_cards:s.red_cards||0};
+    const pts=calcPlayerPoints(p,s);
+    return{...p,pts,goals:s.goals||0,assists:s.assists||0,clean_sheet:s.clean_sheet||false,yellow_cards:s.yellow_cards||0,red_cards:s.red_cards||0,goals_conceded:s.goals_conceded||0,penalties_saved:s.penalties_saved||0};
   }).sort((a,b)=>b.pts-a.pts);
 
   // Render filters
@@ -1546,15 +1560,42 @@ function closePlayerModal(e){
   if(e.target.id==='player-modal') document.getElementById('player-modal').style.display='none';
 }
 
+function calcPlayerPoints(player, s){
+  if(!player||!s) return 0;
+  const pos=player.position;
+  let pts=0;
+  // Base
+  pts+=PTS.base[pos]||0;
+  // Goals
+  const goals=s.goals||0;
+  if(pos==="ATT"){
+    if(goals>=1) pts+=5;
+    if(goals>=2) pts+=5+PTS.double_bonus;
+    if(goals>=3) pts+=5+PTS.hattrick_bonus;
+    if(goals>3) pts+=(goals-3)*5;
+  } else {
+    pts+=goals*(PTS.goal[pos]||0);
+  }
+  // Assists
+  pts+=(s.assists||0)*(PTS.assist[pos]||0);
+  // Clean sheet
+  if(s.clean_sheet) pts+=PTS.clean_sheet[pos]||0;
+  // Goals conceded
+  if(pos==="GK"||pos==="DEF"||pos==="MID"){
+    pts+=(s.goals_conceded||0)*PTS.goals_conceded;
+  }
+  // Penalty saved (GK only)
+  if(pos==="GK") pts+=(s.penalties_saved||0)*PTS.penalty_saved;
+  // Cards
+  pts+=(s.yellow_cards||0)*PTS.yellow_card;
+  pts+=(s.red_cards||0)*PTS.red_card;
+  return pts;
+}
+
 function calcPlayerPts(pid){
   const s=lstats[pid]||{};
-  let pts=0;
-  pts+=(s.goals||0)*PTS.goals;
-  pts+=(s.assists||0)*PTS.assists;
-  if(s.clean_sheet)pts+=PTS.clean_sheet;
-  pts+=(s.yellow_cards||0)*PTS.yellow_cards;
-  pts+=(s.red_cards||0)*PTS.red_cards;
-  return pts;
+  const p=players.find(x=>x.id===pid);
+  return calcPlayerPoints(p,s);
 }
 
 async function showPlayerModal(pid){
