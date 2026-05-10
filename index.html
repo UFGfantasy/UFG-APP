@@ -1344,6 +1344,27 @@ function togCS2(pid){
   renderEventAdmin();
 }
 
+async function savePlayerStat(pid){
+  const btn=document.getElementById("sp-btn-"+pid);
+  const p=players.find(x=>x.id===pid);
+  if(!p)return;
+  if(btn){btn.textContent="Saving...";btn.disabled=true;}
+  const s=lstats[pid]||{};
+  await ups("player_stats",{
+    player_id:pid,
+    goals:s.goals||0,
+    assists:s.assists||0,
+    clean_sheets:s.clean_sheets||0,
+    yellow_cards:s.yellow_cards||0,
+    red_cards:s.red_cards||0,
+    goals_conceded:s.goals_conceded||0,
+    penalties_saved:s.penalties_saved||0,
+    doubles:s.doubles||0,
+    hattricks:s.hattricks||0
+  },"player_id");
+  if(btn){btn.textContent="✅ Saved!";setTimeout(()=>{if(btn){btn.textContent="💾 Save "+p.name;btn.disabled=false;}},1500);}
+}
+
 function updStat(pid,f,v){if(!lstats[pid])lstats[pid]={};lstats[pid][f]=parseInt(v)||0;}
 function togCS(pid){}
 async function saveAllStats(){
