@@ -1325,21 +1325,11 @@ function renderEventAdmin(){
 
 function adjStat(pid,field,delta,min){
   if(!lstats[pid])lstats[pid]={};
-  const cur=lstats[pid][field]||0;
+  const cur=typeof lstats[pid][field]==="number"?lstats[pid][field]:0;
   const newVal=Math.max(min||0,cur+delta);
   lstats[pid][field]=newVal;
   const el=document.getElementById("sv-"+pid+"-"+field);
   if(el)el.textContent=newVal;
-  // Refresh pts display
-  const p=players.find(x=>x.id===pid);
-  if(p){
-    const pts=calcPlayerPoints(p,lstats[pid]);
-    const card=el?.closest('[style*="border-radius:12px"]');
-    if(card){
-      const ptsEl=card.querySelector('[style*="Bebas Neue"]');
-      if(ptsEl)ptsEl.textContent=pts+" pts";
-    }
-  }
 }
 
 function togCS2(pid){
