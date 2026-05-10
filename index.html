@@ -487,14 +487,50 @@ async function init(){
 }
 
 function renderPts(){
-  const items=[["⚽","Goal","+5",true],["🎯","Assist","+3",true],["🧤","Clean Sheet","+6",true],["🟨","Yellow Card","-2",false],["🟥","Red Card","-5",false],["🔮","Prediction","+3",true]];
-  document.getElementById("pts-grid").innerHTML=items.map(([em,n,pts,pos])=>`
-    <div class="pts-card">
-      <div class="pts-emoji">${em}</div>
-      <div class="pts-name">${n}</div>
-      <div class="bebas pts-val ${pos?'pts-pos':'pts-neg'}">${pts} PTS</div>
-    </div>`).join("");
+  const sections=[
+    {id:0,color:"var(--gk)",label:"🧤 GK",items:[["✅","Base","+7"],["🧤","Clean Sheet","+5"],["🛡️","Penalty Saved","+5"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:1,color:"var(--def)",label:"🛡️ DEF",items:[["✅","Base","+5"],["⚽","Goal","+7"],["🎯","Assist","+3"],["🧤","Clean Sheet","+3"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:2,color:"var(--mid)",label:"⚙️ MID",items:[["✅","Base","+3"],["⚽","Goal","+6"],["🎯","Assist","+5"],["🧤","Clean Sheet","+2"],["🥅","Goal Conceded","-1"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+    {id:3,color:"var(--att)",label:"⚡ ATT",items:[["✅","Base","+2"],["⚽","Goal","+5"],["🎯","Assist","+3"],["⚽⚽","Double Bonus","+5"],["⚽⚽⚽","Hat-trick Bonus","+10"],["🟨","Yellow","-3"],["🟥","Red","-6"]]},
+  ];
+  document.getElementById("pts-grid").innerHTML=`
+    <div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        ${sections.map(s=>`<button class="ftab" id="pts-tab-${s.id}" onclick="showPtsSection(${s.id})">${s.label}</button>`).join("")}
+      </div>
+      ${sections.map(s=>`
+        <div id="pts-section-${s.id}" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+            ${s.items.map(([em,n,pts])=>`
+              <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:18px">${em}</span>
+                <div style="flex:1;font-size:11px;color:rgba(255,255,255,0.4);font-weight:700">${n}</div>
+                <span style="font-family:'Bebas Neue';font-size:18px;color:${pts.startsWith("+")?"#10b981":"#ef4444"}">${pts}</span>
+              </div>`).join("")}
+          </div>
+        </div>`).join("")}
+      <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:10px 14px;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
+        <span style="font-size:12px;color:rgba(255,255,255,0.5)">🎯 Exact score <span style="color:#FFD700;font-weight:800">+5pts</span></span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.5)">✓ Right outcome <span style="color:#10b981;font-weight:800">+3pts</span></span>
+      </div>
+    </div>
+  `;
+  showPtsSection(0);
 }
+
+function showPtsSection(idx){
+  [0,1,2,3].forEach(i=>{
+    const sec=document.getElementById("pts-section-"+i);
+    const tab=document.getElementById("pts-tab-"+i);
+    const colors=["var(--gk)","var(--def)","var(--mid)","var(--att)"];
+    if(sec)sec.style.display=i===idx?"block":"none";
+    if(tab){
+      if(i===idx){tab.style.background=colors[i];tab.style.color=i===0?"#000":"#fff";tab.style.borderColor=colors[i];}
+      else{tab.style.background="";tab.style.color="";tab.style.borderColor="";}
+    }
+  });
+}
+
 
 function calcBoard(mgrs,sq,st,pr,mt){
   return mgrs.map(m=>{
@@ -1596,8 +1632,8 @@ async function loadPlayersStanding(){
             <span class="pos pos-${p.position}" style="font-size:9px">${p.position}</span>
             <span style="font-size:10px;color:rgba(255,255,255,0.3)">${FL[p.country]||p.country}</span>
             ${p.goals?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">⚽${p.goals}</span>`:""}
-            ${p.doubles?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">x2×${p.doubles}</span>`:""}
-            ${p.hattricks?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">x3×${p.hattricks}</span>`:""}
+            ${p.doubles?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">D=${p.doubles}</span>`:""}
+            ${p.hattricks?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">HT=${p.hattricks}</span>`:""}
             ${p.assists?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🎯${p.assists}</span>`:""}
             ${p.clean_sheets?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🧤${p.clean_sheets}</span>`:""}
             ${p.penalties_saved?`<span style="font-size:10px;color:rgba(255,255,255,0.4)">🛡️${p.penalties_saved}</span>`:""}
