@@ -1627,9 +1627,9 @@ function calcPlayerPoints(player, s){
   // Goals
   const goals=s.goals||0;
   if(pos==="ATT"){
-    pts+=goals*5;
-    pts+=(s.doubles||0)*PTS.double_bonus;
-    pts+=(s.hattricks||0)*PTS.hattrick_bonus;
+    pts+=goals*5;             // each goal x5
+    pts+=(s.doubles||0)*5;    // double bonus +5
+    pts+=(s.hattricks||0)*10; // hat-trick bonus +10
   } else {
     pts+=goals*(PTS.goal[pos]||0);
   }
@@ -1669,15 +1669,15 @@ async function showPlayerModal(pid){
   const goals=s.goals||0;
   let goalPts=0;
   if(pos==="ATT"){
-    goalPts=goals*5+(s.doubles||0)*PTS.double_bonus+(s.hattricks||0)*PTS.hattrick_bonus;
+    goalPts=goals*5;
   } else {
     goalPts=goals*(PTS.goal[pos]||0);
   }
   const statItems=[
     {e:"✅",l:"Base",v:"-",pts:PTS.base[pos]||0,col:"#a78bfa"},
     {e:"⚽",l:"Goals",v:goals,pts:goalPts,col:"#f97316"},
-    pos==="ATT"&&(s.doubles||0)>0?{e:"⚽⚽",l:"Doubles bonus",v:s.doubles||0,pts:(s.doubles||0)*PTS.double_bonus,col:"#f97316"}:null,
-    pos==="ATT"&&(s.hattricks||0)>0?{e:"⚽⚽⚽",l:"Hat-tricks bonus",v:s.hattricks||0,pts:(s.hattricks||0)*PTS.hattrick_bonus,col:"#f97316"}:null,
+    pos==="ATT"&&(s.doubles||0)>0?{e:"⚽⚽",l:"Double bonus",v:s.doubles||0,pts:(s.doubles||0)*5,col:"#f97316"}:null,
+    pos==="ATT"&&(s.hattricks||0)>0?{e:"⚽⚽⚽",l:"Hat-trick bonus",v:s.hattricks||0,pts:(s.hattricks||0)*10,col:"#f97316"}:null,
     {e:"🎯",l:"Assists",v:s.assists||0,pts:(s.assists||0)*(PTS.assist[pos]||0),col:"#3b82f6"},
     (pos==="GK"||pos==="DEF"||pos==="MID")?{e:"🧤",l:"Clean Sheets",v:s.clean_sheets||0,pts:(s.clean_sheets||0)*(PTS.clean_sheet[pos]||0),col:"#10b981"}:null,
     (pos==="GK"||pos==="DEF"||pos==="MID")?{e:"🥅",l:"Goals Conceded",v:s.goals_conceded||0,pts:(s.goals_conceded||0)*PTS.goals_conceded,col:"#ef4444"}:null,
