@@ -1254,64 +1254,102 @@ async function renderAdmStats(reload=false){
 
 let eventAdminFilter="";
 function renderEventAdmin(){
-
   const el=document.getElementById("adm-stats");
-  // Default to first country if no filter
-  if(!statsFilter) statsFilter=C[0];
-  const filtered=players.filter(p=>p.country===statsFilter||p.name.toLowerCase().includes(statsFilter.toLowerCase()));
+  const filtered=players.filter(p=>!eventAdminFilter||p.name.toLowerCase().includes(eventAdminFilter.toLowerCase())||p.country===eventAdminFilter);
 
   el.innerHTML=`
-    <div style="margin-bottom:10px">
-      <input class="input" placeholder="🔍 Search by name..." oninput="statsFilter=this.value;renderAdmStats(false)" value="${statsFilter===C[0]&&!statsFilter?'':statsFilter}" style="margin-bottom:0">
+    <div style="margin-bottom:14px">
+      <input class="input" placeholder="🔍 Search player..." oninput="eventAdminFilter=this.value;renderEventAdmin()" value="${eventAdminFilter}">
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-      ${C.map(c=>`<button class="ftab" onclick="statsFilter='${c}';renderAdmStats(false)" style="${statsFilter===c?"background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;border-color:transparent":""}">${FL[c]||c}</button>`).join("")}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+      ${[{k:"",l:"🌍"},...C.map(c=>({k:c,l:FL[c]||c}))].map(({k,l})=>`
+        <button class="ftab ${eventAdminFilter===k?"on":""}" onclick="eventAdminFilter='${k}';renderEventAdmin()">${l}</button>`).join("")}
     </div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:10px;font-weight:700">${filtered.length} players · Click a flag to filter by country</div>
-    <div style="margin-bottom:12px">
-      <button class="btn btn-green" style="width:100%;font-size:15px" id="sv-btn" onclick="saveAllStats()">💾 SAVE ALL STATS</button>
-      <div id="sv-msg" style="display:none;text-align:center;font-size:13px;font-weight:700;margin-top:8px"></div>
-    </div>
-    <div>
+    <div style="display:grid;gap:8px">
       ${filtered.map(p=>{
         const s=lstats[p.id]||{};
-        return`<div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            ${p.photo_url?`<img src="${e(p.photo_url)}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`:`<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">${FL[p.country]||"?"}</div>`}
-            <span style="font-weight:800;flex:1">${e(p.name)}</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.3)">${FL[p.country]||p.country}</span>
-            <span class="pos pos-${p.position}">${p.position}</span>
+        const pts=calcPlayerPoints(p,s);
+        return`<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            ${p.photo_url?`<img src="${e(p.photo_url)}" style="width:42px;height:42px;border-radius:50%;object-fit:contain">`:`<div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px">${FL[p.country]||"?"}</div>`}
+            <div style="flex:1">
+              <div style="font-weight:800">${e(p.name)}</div>
+              <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+                <span class="pos pos-${p.position}" style="font-size:10px">${p.position}</span>
+                <span style="font-size:11px;color:rgba(255,255,255,0.3)">${FL[p.country]||p.country}</span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'Bebas Neue';font-size:24px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${pts} pts</div>
+            </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-            ${[["goals","⚽ Goals"],["assists","🎯 Assists"],["yellow_cards","🟨 Yellow"],["red_cards","🟥 Red"]].map(([f,l])=>`
-              <div>
-                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px;font-weight:700">${l}</div>
-                <input type="number" min="0" max="99" value="${s[f]||0}" class="admin-stat-input" id="stat-${p.id}-${f}" onchange="updStat('${p.id}','${f}',this.value)">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+            ${[
+              ["goals","⚽","Goals",0,30],
+              ["assists","🎯","Assists",0,20],
+              p.position==="ATT"?["doubles","⚽⚽","Doubles",0,10]:null,
+              p.position==="ATT"?["hattricks","⚽⚽⚽","Hat-tricks",0,5]:null,
+              ["yellow_cards","🟨","Yellow",0,5],
+              ["red_cards","🟥","Red",0,3],
+              (p.position==="GK"||p.position==="DEF"||p.position==="MID")?["goals_conceded","🥅","Goals Conceded",0,30]:null,
+              p.position==="GK"?["penalties_saved","🛡️","Penalties Saved",0,10]:null
+            ].filter(Boolean).map(([f,em,l,min,max])=>`
+              <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:18px">${em}</span>
+                <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700">${l}</div></div>
+                <div style="display:flex;align-items:center;gap:4px">
+                  <button onclick="adjStat('${p.id}','${f}',-1,${min})" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(239,68,68,0.2);color:#ef4444;font-size:16px;cursor:pointer;font-weight:800">−</button>
+                  <span style="font-size:18px;font-weight:800;min-width:24px;text-align:center" id="sv-${p.id}-${f}">${s[f]||0}</span>
+                  <button onclick="adjStat('${p.id}','${f}',1,${max})" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(16,185,129,0.2);color:#10b981;font-size:16px;cursor:pointer;font-weight:800">+</button>
+                </div>
               </div>`).join("")}
+            <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;display:flex;align-items:center;gap:8px;grid-column:span 2">
+              <span style="font-size:18px">🧤</span>
+              <div style="flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700">Clean Sheets</div></div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <button onclick="adjStat('${p.id}','clean_sheets',-1,0)" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(239,68,68,0.2);color:#ef4444;font-size:16px;cursor:pointer;font-weight:800">−</button>
+                <span style="font-size:18px;font-weight:800;min-width:24px;text-align:center;color:var(--yellow)" id="sv-${p.id}-clean_sheets">${s.clean_sheets||0}</span>
+                <button onclick="adjStat('${p.id}','clean_sheets',1,50)" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(16,185,129,0.2);color:#10b981;font-size:16px;cursor:pointer;font-weight:800">+</button>
+              </div>
+            </div>
           </div>
-          ${(p.position==="GK"||p.position==="DEF")?`<div style="margin-top:8px">
-            <button id="cs-${p.id}" onclick="togCS('${p.id}')"
-              style="padding:6px 12px;border-radius:6px;border:1px solid ${s.clean_sheet?"var(--yellow)":"rgba(255,255,255,0.15)"};background:${s.clean_sheet?"var(--yellow)":"rgba(255,255,255,0.05)"};color:${s.clean_sheet?"#000":"rgba(255,255,255,0.6)"};cursor:pointer;font-weight:800;font-size:12px;font-family:'Nunito',sans-serif">
-              🧤 Clean Sheet: ${s.clean_sheet?"YES ✓":"NO"}
-            </button></div>`:""}
+          <button onclick="savePlayerStat('${p.id}')" id="sp-btn-${p.id}"
+            style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif">
+            💾 Save ${e(p.name)}
+          </button>
         </div>`;
       }).join("")}
-    </div>`;
+    </div>
+  `;
 }
 
-function updStat(pid,f,v){
-  if(!lstats[pid])lstats[pid]={player_id:pid};
-  lstats[pid][f]=parseInt(v)||0;
+function adjStat(pid,field,delta,min){
+  if(!lstats[pid])lstats[pid]={};
+  const cur=lstats[pid][field]||0;
+  const newVal=Math.max(min||0,cur+delta);
+  lstats[pid][field]=newVal;
+  const el=document.getElementById("sv-"+pid+"-"+field);
+  if(el)el.textContent=newVal;
+  // Refresh pts display
+  const p=players.find(x=>x.id===pid);
+  if(p){
+    const pts=calcPlayerPoints(p,lstats[pid]);
+    const card=el?.closest('[style*="border-radius:12px"]');
+    if(card){
+      const ptsEl=card.querySelector('[style*="Bebas Neue"]');
+      if(ptsEl)ptsEl.textContent=pts+" pts";
+    }
+  }
 }
-function togCS(pid){
-  if(!lstats[pid])lstats[pid]={player_id:pid};
+
+function togCS2(pid){
+  if(!lstats[pid])lstats[pid]={};
   lstats[pid].clean_sheet=!lstats[pid].clean_sheet;
-  const btn=document.getElementById("cs-"+pid);const on=lstats[pid].clean_sheet;
-  btn.style.background=on?"var(--yellow)":"rgba(255,255,255,0.05)";
-  btn.style.borderColor=on?"var(--yellow)":"rgba(255,255,255,0.15)";
-  btn.style.color=on?"#000":"rgba(255,255,255,0.6)";
-  btn.textContent="🧤 Clean Sheet: "+(on?"YES ✓":"NO");
+  renderEventAdmin();
 }
+
+function updStat(pid,f,v){if(!lstats[pid])lstats[pid]={};lstats[pid][f]=parseInt(v)||0;}
+function togCS(pid){}
 async function saveAllStats(){
   const btn=document.getElementById("sv-btn");
   const msg=document.getElementById("sv-msg");
