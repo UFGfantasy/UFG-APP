@@ -1607,14 +1607,22 @@ async function showPlayerModal(pid){
   }
   const s=lstats[pid]||{};
   const pts=calcPlayerPts(pid);
+  const pos=p.position;
   const modal=document.getElementById('player-modal');
+  const goals=s.goals||0;
+  let goalPts=0;
+  if(pos==="ATT"){if(goals>=1)goalPts+=5;if(goals>=2)goalPts+=5+PTS.double_bonus;if(goals>=3)goalPts+=5+PTS.hattrick_bonus;if(goals>3)goalPts+=(goals-3)*5;}
+  else goalPts=goals*(PTS.goal[pos]||0);
   const statItems=[
-    {e:"⚽",l:"Goals",v:s.goals||0,pts:(s.goals||0)*PTS.goals,col:"#f97316"},
-    {e:"🎯",l:"Assists",v:s.assists||0,pts:(s.assists||0)*PTS.assists,col:"#3b82f6"},
-    {e:"🧤",l:"Clean Sheet",v:s.clean_sheet?"YES":"NO",pts:s.clean_sheet?PTS.clean_sheet:0,col:"#10b981"},
-    {e:"🟨",l:"Yellow Cards",v:s.yellow_cards||0,pts:(s.yellow_cards||0)*PTS.yellow_cards,col:"#f59e0b"},
-    {e:"🟥",l:"Red Cards",v:s.red_cards||0,pts:(s.red_cards||0)*PTS.red_cards,col:"#ef4444"},
-  ];
+    {e:"✅",l:"Base",v:"-",pts:PTS.base[pos]||0,col:"#a78bfa"},
+    {e:"⚽",l:"Goals",v:goals,pts:goalPts,col:"#f97316"},
+    {e:"🎯",l:"Assists",v:s.assists||0,pts:(s.assists||0)*(PTS.assist[pos]||0),col:"#3b82f6"},
+    {e:"🧤",l:"Clean Sheet",v:s.clean_sheet?"YES":"NO",pts:s.clean_sheet?PTS.clean_sheet[pos]||0:0,col:"#10b981"},
+    {e:"🥅",l:"Goals Conceded",v:s.goals_conceded||0,pts:(s.goals_conceded||0)*((pos==="GK"||pos==="DEF"||pos==="MID")?PTS.goals_conceded:0),col:"#ef4444"},
+    pos==="GK"?{e:"🛡️",l:"Penalties Saved",v:s.penalties_saved||0,pts:(s.penalties_saved||0)*PTS.penalty_saved,col:"#FFD700"}:null,
+    {e:"🟨",l:"Yellow Cards",v:s.yellow_cards||0,pts:(s.yellow_cards||0)*PTS.yellow_card,col:"#f59e0b"},
+    {e:"🟥",l:"Red Cards",v:s.red_cards||0,pts:(s.red_cards||0)*PTS.red_card,col:"#ef4444"},
+  ].filter(Boolean);
   document.getElementById('modal-content').innerHTML=`
     <div style="text-align:center;margin-bottom:20px">
       ${p.photo_url
