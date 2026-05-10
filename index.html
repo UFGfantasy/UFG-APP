@@ -1323,15 +1323,13 @@ function renderEventAdmin(){
   `;
 }
 
-function adjStat(pid,field,delta,min){
+function adjStat(pid,field,delta,max){
   if(!lstats[pid])lstats[pid]={};
-  const cur=typeof lstats[pid][field]==="number"?lstats[pid][field]:parseInt(lstats[pid][field])||0;
-  const newVal=Math.max(min||0,cur+delta);
+  const cur=typeof lstats[pid][field]==="number"?lstats[pid][field]:0;
+  const newVal=Math.max(0,Math.min(max||99,cur+delta));
   lstats[pid][field]=newVal;
-  // Find element using data attributes instead of complex ID
   const el=document.querySelector(`[data-pid="${pid}"][data-field="${field}"]`);
   if(el)el.textContent=newVal;
-  // Update pts
   const p=players.find(x=>x.id===pid);
   if(p){
     const pts=calcPlayerPoints(p,lstats[pid]);
