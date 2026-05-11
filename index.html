@@ -145,10 +145,18 @@ select.input option{background:#2d1060;color:#fff}
 .msg-err{color:#ef4444;font-size:13px;font-weight:700;margin-bottom:10px}
 
 /* SWAP ANIMATIONS */
-@keyframes pulseOrange{0%,100%{box-shadow:0 0 0 3px rgba(249,115,22,0.4),0 0 12px rgba(249,115,22,0.6)}50%{box-shadow:0 0 0 5px rgba(249,115,22,0.7),0 0 24px rgba(249,115,22,1)}}
-@keyframes pulseGreen{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,0.4),0 0 12px rgba(16,185,129,0.6)}50%{box-shadow:0 0 0 5px rgba(16,185,129,0.7),0 0 24px rgba(16,185,129,1)}}
-.swap-selected img,.swap-selected{border:3px solid var(--orange)!important;animation:pulseOrange 0.8s ease-in-out infinite!important}
-.swap-available img,.swap-available{border:3px solid #10b981!important;animation:pulseGreen 0.8s ease-in-out infinite!important}
+@keyframes pulseOrange{
+  0%{outline:3px solid rgba(249,115,22,0.5);outline-offset:2px;transform:scale(1)}
+  50%{outline:4px solid rgba(249,115,22,1);outline-offset:5px;transform:scale(1.08)}
+  100%{outline:3px solid rgba(249,115,22,0.5);outline-offset:2px;transform:scale(1)}
+}
+@keyframes pulseGreen{
+  0%{outline:3px solid rgba(16,185,129,0.5);outline-offset:2px;transform:scale(1)}
+  50%{outline:4px solid rgba(16,185,129,1);outline-offset:5px;transform:scale(1.08)}
+  100%{outline:3px solid rgba(16,185,129,0.5);outline-offset:2px;transform:scale(1)}
+}
+.swap-selected{animation:pulseOrange 0.8s ease-in-out infinite!important;border-radius:50%}
+.swap-available{animation:pulseGreen 0.8s ease-in-out infinite!important;border-radius:50%}
 
 /* PLAYER MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease}
@@ -766,14 +774,15 @@ function renderPitch(){
     {pos:"GK",cls:"pitch-row-gk"}
   ];
 
-  document.getElementById("pitch-content").innerHTML=rows.map(({pos,cls})=>{
+  const pitchContent=document.getElementById("pitch-content");
+  pitchContent.innerHTML=rows.map(({pos,cls})=>{
     const posPlayers=byPos[pos]||[];
     const max=SR[pos];
     const slotsArr=Array.from({length:max},(_,i)=>posPlayers[i]||null);
     const isGK=pos==="GK";
     return`<div class="pitch-row ${cls}" ${isGK?'style="background:rgba(0,0,0,0.15);margin:0 -10px;padding-left:10px;padding-right:10px"':''}>
       ${slotsArr.map(p=>p?`
-        <div class="pitch-slot" onclick="mgr?.team_locked?(transfersOpen?selectSwapForPitch('${p.id}'):showPlayerModal('${p.id}')):removeFromSquad('${p.id}')">
+        <div class="pitch-slot" data-pid="${p.id}" onclick="mgr?.team_locked?(transfersOpen?selectSwapForPitch('${p.id}'):showPlayerModal('${p.id}')):removeFromSquad('${p.id}')">
           ${p.photo_url?`<img class="pitch-avatar" loading="lazy" src="${e(p.photo_url)}" title="${e(p.name)}" style="${isGK?'border-color:var(--gk);box-shadow:0 0 12px rgba(245,158,11,0.5)':''}">
           `:`<div class="pitch-avatar-empty" style="${isGK?'border-color:var(--gk)':''}"> ${isGK?'🧤':FL[p.country]}</div>`}
           <div class="pitch-name">${e(p.name.split(" ")[0])}</div>
@@ -888,9 +897,9 @@ function renderBench(){
   el.innerHTML=["GK","DEF","MID","ATT"].map(pos=>{
     const p=byPos[pos][0]||null;
     const isSwapTarget=swapSource&&swapSourcePlayer?.position===pos&&p;
-    return`<div style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&transfersOpen&&swapSource?`selectBenchForSwap('${p?p.id:""}','${pos}')`:(mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`)}">
+    return`<div class="bench-slot" data-pos="${pos}" data-pid="${p?p.id:""}" style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&transfersOpen&&swapSource?`selectBenchForSwap('${p?p.id:""}','${pos}')`:(mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`)}">
       ${p
-        ?`${p.photo_url?`<img src="${e(p.photo_url)}" style="width:52px;height:52px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,165,0,0.5);display:block;margin:0 auto 4px">`:`<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,165,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto 4px">${FL[p.country]||"?"}</div>`}
+        ?`${p.photo_url?`<img src="${e(p.photo_url)}" class="bench-avatar" style="width:52px;height:52px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,165,0,0.5);display:block;margin:0 auto 4px">`:`<div class="bench-avatar-empty" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,165,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto 4px">${FL[p.country]||"?"}</div>`}
         <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.7)">${e(p.name.split(" ")[0])}</div>
         <span class="pos pos-${pos}" style="font-size:9px">${pos}</span>`
         :`<div style="width:52px;height:52px;border-radius:50%;border:2px dashed rgba(255,165,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 4px;background:rgba(255,165,0,0.05)">+</div>
@@ -1702,6 +1711,7 @@ function selectSwapForPitch(pid){
   renderPitch();
   renderBench();
   updateSwapUI();
+  setTimeout(applySwapClasses,50);
 }
 
 function selectBenchForSwap(benchPid,pos){
