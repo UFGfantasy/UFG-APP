@@ -1268,7 +1268,7 @@ async function renderAdmLineups(){
       ${matches.map(m=>`
         <button onclick="selectLineupMatch('${m.id}')"
           style="padding:10px 14px;background:${selectedLineupMatch===m.id?"rgba(232,0,58,0.15)":"rgba(255,255,255,0.05)"};border:1px solid ${selectedLineupMatch===m.id?"rgba(232,0,58,0.4)":"rgba(255,255,255,0.08)"};border-radius:8px;color:#fff;cursor:pointer;text-align:left;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700">
-          ${FL[m.home_country]||m.home_country} ${e(m.home_country)} vs ${e(m.away_country)} ${FL[m.away_country]||m.away_country}
+          ${e(m.home_country)} vs ${e(m.away_country)}
           <span style="float:right;font-size:11px;color:rgba(255,255,255,0.3)">${fmtDate(m.match_date)}</span>
         </button>`).join("")}
     </div>
@@ -1278,7 +1278,13 @@ async function renderAdmLineups(){
 
 async function selectLineupMatch(id){
   selectedLineupMatch=id;
-  renderAdmLineups();
+  document.querySelectorAll("#adm-lineups button").forEach(btn=>{
+    const onclick=btn.getAttribute("onclick")||"";
+    const isSelected=onclick.includes(id);
+    btn.style.background=isSelected?"rgba(232,0,58,0.15)":"rgba(255,255,255,0.05)";
+    btn.style.borderColor=isSelected?"rgba(232,0,58,0.4)":"rgba(255,255,255,0.08)";
+  });
+  loadLineupForm();
 }
 
 async function loadLineupForm(){
