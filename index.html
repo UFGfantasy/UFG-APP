@@ -777,7 +777,7 @@ async function loadPopularity(){
   _playerPopularity={};
   if(Array.isArray(allSquads))allSquads.forEach(s=>{_playerPopularity[s.player_id]=(_playerPopularity[s.player_id]||0)+1;});
   if(Array.isArray(allBench))allBench.forEach(s=>{_playerPopularity[s.player_id]=(_playerPopularity[s.player_id]||0)+1;});
-  renderPlayerList();
+  renderPlayerList(); // re-render now that we have popularity data
 }
 
 function updateLockUI(){
