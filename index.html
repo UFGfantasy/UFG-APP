@@ -144,6 +144,15 @@ select.input option{background:#2d1060;color:#fff}
 .msg-ok{color:#10b981;font-size:13px;font-weight:700}
 .msg-err{color:#ef4444;font-size:13px;font-weight:700;margin-bottom:10px}
 
+/* PODIUM */
+@keyframes riseUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.podium-1{animation:riseUp .5s ease .1s both}
+.podium-2{animation:riseUp .5s ease .2s both}
+.podium-3{animation:riseUp .5s ease .3s both}
+
+/* BADGES */
+.badge{display:inline-block;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.5px;margin-left:4px}
+
 /* SWAP ANIMATIONS */
 @keyframes pulseOrange{
   0%{outline:3px solid rgba(249,115,22,0.5);outline-offset:2px;transform:scale(1)}
@@ -453,6 +462,8 @@ async function hashPassword(pw){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 let _cache={players:null,matches:null,leaderboard:null,leaderboardTs:0};
+let _playerPopularity={};
+let _totalManagers=0;
 const CACHE_TTL=30000; // 30 seconds
 
 async function cachedGet(key, table, params){
@@ -750,10 +761,25 @@ async function loadSquad(){
   squad=Array.isArray(sqRes)?sqRes.map(r=>r.player_id):[];
   bench=Array.isArray(bnRes)?bnRes.map(r=>r.player_id):[];
   transfersOpen=Array.isArray(settings)&&settings[0]?.value==="true";
+  // Load popularity in background
+  loadPopularity();
   renderPitch();
   renderPlayerList();
   updateLockUI();
 }
+async function loadPopularity(){
+  const[allSquads,allBench,mgrs]=await Promise.all([
+    get("squads",{select:"player_id"}),
+    get("bench",{select:"player_id"}),
+    get("managers",{select:"id"})
+  ]);
+  _totalManagers=Array.isArray(mgrs)?mgrs.length:1;
+  _playerPopularity={};
+  if(Array.isArray(allSquads))allSquads.forEach(s=>{_playerPopularity[s.player_id]=(_playerPopularity[s.player_id]||0)+1;});
+  if(Array.isArray(allBench))allBench.forEach(s=>{_playerPopularity[s.player_id]=(_playerPopularity[s.player_id]||0)+1;});
+  renderPlayerList();
+}
+
 function updateLockUI(){
   const lockBtn=document.getElementById("lock-btn");
   const lockedBanner=document.getElementById("locked-banner");
@@ -1258,6 +1284,32 @@ function editPlayer(pid){
       <button class="btn btn-primary" style="width:100%;font-size:16px" onclick="saveEditPlayer('${p.id}')">💾 SAVE CHANGES</button>
     </div>`;
   modal.style.display='flex';
+  // Compute badges async
+  setTimeout(()=>computeBadges(pid,p,s),100);
+}
+
+async function computeBadges(pid,p,s){
+  const el=document.getElementById("player-badges-"+pid);
+  if(!el)return;
+  // Get all player stats for comparison
+  const allStats=await get("player_stats",{select:"*"});
+  if(!Array.isArray(allStats))return;
+  const badges=[];
+  const goals=s.goals||0;
+  const assists=s.assists||0;
+  const cleanSheets=s.clean_sheets||0;
+  const pts=calcPlayerPoints(p,s);
+  // Find max values
+  const maxGoals=Math.max(...allStats.filter(x=>{const pl=players.find(y=>y.id===x.player_id);return pl?.position==="ATT";}).map(x=>x.goals||0));
+  const maxAssists=Math.max(...allStats.map(x=>x.assists||0));
+  const maxCS=Math.max(...allStats.filter(x=>{const pl=players.find(y=>y.id===x.player_id);return pl?.position==="GK";}).map(x=>x.clean_sheets||0));
+  const allPts=allStats.map(x=>{const pl=players.find(y=>y.id===x.player_id);return pl?calcPlayerPoints(pl,x):0;});
+  const maxPts=Math.max(...allPts);
+  if(pts>0&&pts===maxPts) badges.push(["🏆","#FFD700","Best Player"]);
+  if(p.position==="ATT"&&goals>0&&goals===maxGoals) badges.push(["⚽","#f97316","Top Scorer"]);
+  if(assists>0&&assists===maxAssists) badges.push(["🎯","#3b82f6","Top Assist"]);
+  if(p.position==="GK"&&cleanSheets>0&&cleanSheets===maxCS) badges.push(["🧤","#10b981","Best GK"]);
+  el.innerHTML=badges.map(([em,color,label])=>`<span class="badge" style="background:${color}20;border:1px solid ${color}60;color:${color}">${em} ${label}</span>`).join("");
 }
 
 async function saveEditPlayer(pid){
@@ -1475,6 +1527,14 @@ async function renderAdmDashboard(){
           </div>`).join(""):""}
       </div>
     </div>`;
+}
+
+async function adminResetPw(managerId, username){
+  const newPw=prompt(`New password for ${username}:`);
+  if(!newPw||newPw.trim()==="")return;
+  const hashed=await hashPassword(newPw.trim());
+  await pat("managers",{password:hashed},{id:managerId});
+  alert(`✅ Password reset for ${username}!`);
 }
 
 function renderAdmPlayers(){
@@ -2208,6 +2268,7 @@ async function showPlayerModal(pid){
         :`<div style="width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 12px">${FL[p.country]||"👤"}</div>`
       }
       <div style="font-family:'Bebas Neue';font-size:26px;letter-spacing:2px">${e(p.name)}</div>
+      <div style="margin-top:6px" id="player-badges-${pid}"></div>
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px">
         <span class="pos pos-${p.position}">${p.position}</span>
         <span style="font-size:13px;color:rgba(255,255,255,0.4)">${FL[p.country]||p.country}</span>
@@ -2227,6 +2288,32 @@ async function showPlayerModal(pid){
       </div>`).join("")}
   `;
   modal.style.display='flex';
+  // Compute badges async
+  setTimeout(()=>computeBadges(pid,p,s),100);
+}
+
+async function computeBadges(pid,p,s){
+  const el=document.getElementById("player-badges-"+pid);
+  if(!el)return;
+  // Get all player stats for comparison
+  const allStats=await get("player_stats",{select:"*"});
+  if(!Array.isArray(allStats))return;
+  const badges=[];
+  const goals=s.goals||0;
+  const assists=s.assists||0;
+  const cleanSheets=s.clean_sheets||0;
+  const pts=calcPlayerPoints(p,s);
+  // Find max values
+  const maxGoals=Math.max(...allStats.filter(x=>{const pl=players.find(y=>y.id===x.player_id);return pl?.position==="ATT";}).map(x=>x.goals||0));
+  const maxAssists=Math.max(...allStats.map(x=>x.assists||0));
+  const maxCS=Math.max(...allStats.filter(x=>{const pl=players.find(y=>y.id===x.player_id);return pl?.position==="GK";}).map(x=>x.clean_sheets||0));
+  const allPts=allStats.map(x=>{const pl=players.find(y=>y.id===x.player_id);return pl?calcPlayerPoints(pl,x):0;});
+  const maxPts=Math.max(...allPts);
+  if(pts>0&&pts===maxPts) badges.push(["🏆","#FFD700","Best Player"]);
+  if(p.position==="ATT"&&goals>0&&goals===maxGoals) badges.push(["⚽","#f97316","Top Scorer"]);
+  if(assists>0&&assists===maxAssists) badges.push(["🎯","#3b82f6","Top Assist"]);
+  if(p.position==="GK"&&cleanSheets>0&&cleanSheets===maxCS) badges.push(["🧤","#10b981","Best GK"]);
+  el.innerHTML=badges.map(([em,color,label])=>`<span class="badge" style="background:${color}20;border:1px solid ${color}60;color:${color}">${em} ${label}</span>`).join("");
 }
 
 init();
