@@ -1390,18 +1390,18 @@ async function saveLineup(){
 function startCountdown(){
   const target=new Date('2026-07-02T10:00:00');
   function update(){
+    const wrap=document.getElementById("countdown-wrap");
+    const boxes=document.getElementById("countdown-boxes");
+    if(!wrap||!boxes)return;
     const now=new Date();
     const diff=target-now;
-    if(diff<=0){
-      document.getElementById("countdown-wrap").style.display="none";
-      return;
-    }
+    if(diff<=0){wrap.style.display="none";return;}
     const days=Math.floor(diff/86400000);
     const hours=Math.floor((diff%86400000)/3600000);
     const mins=Math.floor((diff%3600000)/60000);
     const secs=Math.floor((diff%60000)/1000);
-    document.getElementById("countdown-wrap").style.display="block";
-    document.getElementById("countdown-boxes").innerHTML=[
+    wrap.style.display="block";
+    boxes.innerHTML=[
       [days,"DAYS"],[hours,"HRS"],[mins,"MIN"],[secs,"SEC"]
     ].map(([v,l])=>`
       <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:58px;text-align:center">
