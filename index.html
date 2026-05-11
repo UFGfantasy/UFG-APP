@@ -1525,8 +1525,10 @@ async function renderAdmDashboard(){
         ${Array.isArray(mgrs)?mgrs.map(m=>`
           <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px">
             <span style="flex:1;font-weight:700;font-size:13px">${e(m.username)}</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.25);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.email||""}</span>
             <span style="font-size:11px">${FL[m.supported_country]||""}</span>
-            ${m.team_locked?'<span style="font-size:11px;color:#10b981;font-weight:700">🔒 Locked</span>':'<span style="font-size:11px;color:rgba(255,255,255,0.3)">⏳ Pending</span>'}
+            ${m.team_locked?'<span style="font-size:11px;color:#10b981;font-weight:700">🔒</span>':'<span style="font-size:11px;color:rgba(255,255,255,0.3)">⏳</span>'}
+            <button onclick="adminResetPw('${m.id}','${e(m.username)}')" style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:3px 8px;color:var(--orange);cursor:pointer;font-size:11px;font-weight:700;font-family:'Nunito',sans-serif">🔑</button>
           </div>`).join(""):""}
       </div>
     </div>`;
