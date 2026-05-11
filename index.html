@@ -678,22 +678,28 @@ function pickCountry(c,btn){
 }
 async function doJoin(){
   const name=document.getElementById("j-input").value.trim();
+  const email=document.getElementById("j-email")?.value.trim()||"";
   const pw=document.getElementById("j-pw").value.trim();
   const errel=document.getElementById("j-err");
+  errel.style.color="#ef4444";
   errel.style.display="none";
   if(!name){errel.textContent="Enter your username";errel.style.display="block";return;}
   if(!pw){errel.textContent="Enter a password";errel.style.display="block";return;}
   const btn=document.getElementById("j-btn");btn.textContent="...";btn.disabled=true;
   try{
     if(jmode==="create"){
+      if(!email||!email.includes("@")){errel.textContent="Enter a valid email";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
       if(!selectedCountry){errel.textContent="Choose a country to support!";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
+      // Check username not taken
       const ex=await get("managers",{select:"id",eq:{username:name}});
-      if(Array.isArray(ex)&&ex.length>0){errel.textContent="This username is already taken";errel.style.display="block";}
-      else{
-        const res=await ins("managers",{username:name,password:pw,supported_country:selectedCountry});
-        if(Array.isArray(res)&&res[0]?.id){setMgr(res[0]);go("squad");}
-        else{errel.textContent="Creation error. Try again.";errel.style.display="block";}
-      }
+      if(Array.isArray(ex)&&ex.length>0){errel.textContent="This username is already taken";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
+      // Check email not taken
+      const exEmail=await get("managers",{select:"id",eq:{email:email}});
+      if(Array.isArray(exEmail)&&exEmail.length>0){errel.textContent="This email is already used — 1 account per email!";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
+      // Create manager
+      const res=await ins("managers",{username:name,email:email,password:pw,supported_country:selectedCountry});
+      if(Array.isArray(res)&&res[0]?.id){setMgr(res[0]);go("squad");}
+      else{errel.textContent="Creation error. Try again.";errel.style.display="block";}
     }else{
       const res=await get("managers",{select:"*",eq:{username:name}});
       if(Array.isArray(res)&&res.length>0){
@@ -702,7 +708,7 @@ async function doJoin(){
       }else{errel.textContent="Username not found — create an account!";errel.style.display="block";}
     }
   }catch(err){errel.textContent="Network error";errel.style.display="block";}
-  btn.textContent=jmode==="create"?"CREATE & PLAY":"ENTRER";btn.disabled=false;
+  btn.textContent=jmode==="create"?"CREATE & PLAY":"LOGIN";btn.disabled=false;
 }
 function setMgr(m){
   mgr=m;
