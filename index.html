@@ -529,7 +529,7 @@ async function init(){
   document.getElementById("loader").style.display="none";
   document.getElementById("app").style.display="block";
   loadTop5();
-  startCountdown();
+  setTimeout(startCountdown, 100);
 }
 
 function renderPts(){
@@ -632,7 +632,7 @@ function go(name){
   if(name==="squad")loadSquad();
   if(name==="pronostics")loadPros();
   if(name==="leaderboard")loadLB();
-  if(name==="home")loadTop5();
+  if(name==="home"){loadTop5();startCountdown();}
   if(name==="players-standing")loadPlayersStanding();
   if(name==="rules")renderPts();
 }
