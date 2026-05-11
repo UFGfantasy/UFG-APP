@@ -372,12 +372,14 @@ select.input option{background:#2d1060;color:#fff}
       </div>
       <div class="filter-row" style="margin-bottom:20px">
         <button class="ftab on" id="at-players" onclick="admTab('players')">👥 Players</button>
+        <button class="ftab" id="at-dashboard" onclick="admTab('dashboard')">📊 Dashboard</button>
         <button class="ftab" id="at-lineups" onclick="admTab('lineups')">📋 Lineups</button>
         <button class="ftab" id="at-stats" onclick="admTab('stats')">📊 Stats</button>
         <button class="ftab" id="at-results" onclick="admTab('results')">🏁 Results</button>
         <button class="ftab" id="at-transfers" onclick="admTab('transfers')">🔄 Transfers</button>
       </div>
       <div id="adm-players"></div>
+      <div id="adm-dashboard" style="display:none"></div>
       <div id="adm-lineups" style="display:none"></div>
       <div id="adm-stats" style="display:none"></div>
       <div id="adm-results" style="display:none"></div>
@@ -441,6 +443,11 @@ const PTS={
 const FORMATION={GK:[0],DEF:[1,2,3,4],MID:[5,6,7],ATT:[8,9,10]};
 
 let players=[],matches=[],squad=[],bench=[],pros={},mgr=null,transfersOpen=false;
+
+async function hashPassword(pw){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 let _cache={players:null,matches:null,leaderboard:null,leaderboardTs:0};
 const CACHE_TTL=30000; // 30 seconds
 
@@ -522,6 +529,7 @@ async function init(){
   document.getElementById("loader").style.display="none";
   document.getElementById("app").style.display="block";
   loadTop5();
+  startCountdown();
 }
 
 function renderPts(){
@@ -697,13 +705,15 @@ async function doJoin(){
       const exEmail=await get("managers",{select:"id",eq:{email:email}});
       if(Array.isArray(exEmail)&&exEmail.length>0){errel.textContent="This email is already used — 1 account per email!";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
       // Create manager
-      const res=await ins("managers",{username:name,email:email,password:pw,supported_country:selectedCountry});
+      const hashed=await hashPassword(pw);
+      const res=await ins("managers",{username:name,email:email,password:hashed,supported_country:selectedCountry});
       if(Array.isArray(res)&&res[0]?.id){setMgr(res[0]);go("squad");}
       else{errel.textContent="Creation error. Try again.";errel.style.display="block";}
     }else{
       const res=await get("managers",{select:"*",eq:{username:name}});
       if(Array.isArray(res)&&res.length>0){
-        if(res[0].password&&res[0].password!==pw){errel.textContent="Wrong password!";errel.style.display="block";}
+        const hashedLogin=await hashPassword(pw);
+        if(res[0].password&&res[0].password!==hashedLogin&&res[0].password!==pw){errel.textContent="Wrong password!";errel.style.display="block";}
         else{setMgr(res[0]);go("squad");}
       }else{errel.textContent="Username not found — create an account!";errel.style.display="block";}
     }
@@ -1195,11 +1205,12 @@ function doAdmLogin(){
 }
 function admLogout(){admIn=false;document.getElementById("adm-login").style.display="block";document.getElementById("adm-panel").style.display="none";}
 function admTab(t){
-  ["players","lineups","stats","results","transfers"].forEach(x=>{
+  ["players","dashboard","lineups","stats","results","transfers"].forEach(x=>{
     document.getElementById("at-"+x).classList.toggle("on",x===t);
     document.getElementById("adm-"+x).style.display=x===t?"block":"none";
   });
   if(t==="players")renderAdmPlayers();
+  if(t==="dashboard")renderAdmDashboard();
   if(t==="lineups")renderAdmLineups();
   if(t==="stats")renderAdmStats(true);
   if(t==="results")renderAdmResults();
@@ -1373,6 +1384,93 @@ async function saveLineup(){
   }
 
   if(btn){btn.textContent="✅ Saved!";setTimeout(()=>{btn.textContent="💾 Save Lineup & Update Base Points";btn.disabled=false;},2000);}
+}
+
+// COUNTDOWN
+function startCountdown(){
+  const target=new Date('2026-07-02T10:00:00');
+  function update(){
+    const now=new Date();
+    const diff=target-now;
+    if(diff<=0){
+      document.getElementById("countdown-wrap").style.display="none";
+      return;
+    }
+    const days=Math.floor(diff/86400000);
+    const hours=Math.floor((diff%86400000)/3600000);
+    const mins=Math.floor((diff%3600000)/60000);
+    const secs=Math.floor((diff%60000)/1000);
+    document.getElementById("countdown-wrap").style.display="block";
+    document.getElementById("countdown-boxes").innerHTML=[
+      [days,"DAYS"],[hours,"HRS"],[mins,"MIN"],[secs,"SEC"]
+    ].map(([v,l])=>`
+      <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:58px;text-align:center">
+        <div style="font-family:'Bebas Neue';font-size:28px;background:linear-gradient(135deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1">${String(v).padStart(2,'0')}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);font-weight:700;margin-top:2px">${l}</div>
+      </div>`).join("");
+  }
+  update();
+  setInterval(update,1000);
+}
+
+// ADMIN DASHBOARD
+async function renderAdmDashboard(){
+  const el=document.getElementById("adm-dashboard");
+  el.innerHTML=`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">Loading...</div>`;
+  const[mgrs,sqs,bns,pros2,locked]=await Promise.all([
+    get("managers",{select:"*"}),
+    get("squads",{select:"manager_id"}),
+    get("bench",{select:"manager_id"}),
+    get("pronostics",{select:"manager_id"}),
+    get("managers",{select:"id",eq:{team_locked:true}})
+  ]);
+  const total=Array.isArray(mgrs)?mgrs.length:0;
+  const lockedCount=Array.isArray(locked)?locked.length:0;
+  const withSquad=Array.isArray(sqs)?[...new Set(sqs.map(s=>s.manager_id))].length:0;
+  const withPros=Array.isArray(pros2)?[...new Set(pros2.map(p=>p.manager_id))].length:0;
+
+  // Country distribution
+  const byCountry={};
+  if(Array.isArray(mgrs))mgrs.forEach(m=>{if(m.supported_country){byCountry[m.supported_country]=(byCountry[m.supported_country]||0)+1;}});
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px">
+      ${[
+        ["👥","Managers",total,"rgba(249,115,22,0.15)","var(--orange)"],
+        ["🔒","Teams Locked",lockedCount,"rgba(16,185,129,0.15)","#10b981"],
+        ["⚽","Building Team",withSquad,"rgba(59,130,246,0.15)","#3b82f6"],
+        ["🔮","Predictions",withPros,"rgba(139,92,246,0.15)","#8b5cf6"],
+      ].map(([em,label,val,bg,color])=>`
+        <div style="background:${bg};border:1px solid ${color}40;border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">${em}</div>
+          <div style="font-family:'Bebas Neue';font-size:32px;color:${color}">${val}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700">${label}</div>
+        </div>`).join("")}
+    </div>
+
+    <div class="glass-dark" style="padding:16px;margin-bottom:16px">
+      <div style="font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;margin-bottom:12px;color:var(--orange)">🌍 SUPPORTED COUNTRIES</div>
+      ${Object.entries(byCountry).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span>${FL[c]||c}</span>
+          <div style="flex:1;background:rgba(255,255,255,0.08);border-radius:4px;height:8px;overflow:hidden">
+            <div style="width:${Math.round(n/total*100)}%;height:100%;background:linear-gradient(90deg,var(--orange),var(--pink));border-radius:4px"></div>
+          </div>
+          <span style="font-weight:800;font-size:13px;min-width:24px;text-align:right">${n}</span>
+        </div>`).join("")}
+    </div>
+
+    <div class="glass-dark" style="padding:16px">
+      <div style="font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;margin-bottom:12px;color:var(--orange)">📋 MANAGERS STATUS</div>
+      <div style="max-height:300px;overflow-y:auto;display:grid;gap:6px">
+        ${Array.isArray(mgrs)?mgrs.map(m=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px">
+            <span style="flex:1;font-weight:700;font-size:13px">${e(m.username)}</span>
+            <span style="font-size:11px">${FL[m.supported_country]||""}</span>
+            ${m.team_locked?'<span style="font-size:11px;color:#10b981;font-weight:700">🔒 Locked</span>':'<span style="font-size:11px;color:rgba(255,255,255,0.3)">⏳ Pending</span>'}
+          </div>`).join(""):""}
+      </div>
+    </div>`;
 }
 
 function renderAdmPlayers(){
