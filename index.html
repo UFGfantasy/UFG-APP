@@ -145,10 +145,10 @@ select.input option{background:#2d1060;color:#fff}
 .msg-err{color:#ef4444;font-size:13px;font-weight:700;margin-bottom:10px}
 
 /* SWAP ANIMATIONS */
-@keyframes pulseOrange{0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.6)}50%{box-shadow:0 0 20px rgba(249,115,22,1)}}
-@keyframes pulseGreen{0%,100%{box-shadow:0 0 8px rgba(16,185,129,0.6)}50%{box-shadow:0 0 20px rgba(16,185,129,1)}}
-.swap-selected{border-color:var(--orange)!important;animation:pulseOrange 1s infinite}
-.swap-available{border-color:#10b981!important;animation:pulseGreen 1s infinite}
+@keyframes pulseOrange{0%,100%{box-shadow:0 0 0 3px rgba(249,115,22,0.4),0 0 12px rgba(249,115,22,0.6)}50%{box-shadow:0 0 0 5px rgba(249,115,22,0.7),0 0 24px rgba(249,115,22,1)}}
+@keyframes pulseGreen{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,0.4),0 0 12px rgba(16,185,129,0.6)}50%{box-shadow:0 0 0 5px rgba(16,185,129,0.7),0 0 24px rgba(16,185,129,1)}}
+.swap-selected img,.swap-selected{border:3px solid var(--orange)!important;animation:pulseOrange 0.8s ease-in-out infinite!important}
+.swap-available img,.swap-available{border:3px solid #10b981!important;animation:pulseGreen 0.8s ease-in-out infinite!important}
 
 /* PLAYER MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease}
@@ -1710,11 +1710,15 @@ function selectBenchForSwap(benchPid,pos){
   const benchP=players.find(x=>x.id===benchPid);
   if(!starter||!benchP)return;
   if(starter.position!==benchP.position){showMsg("❌ Same position only!");return;}
-  // Check if bench player is already in a pending swap
   const alreadySwapped=Object.values(pendingSwaps).includes(benchPid);
   if(alreadySwapped){showMsg("❌ Already swapped!");return;}
   // Store pending swap
   pendingSwaps[swapSource]=benchPid;
+  // Do VISUAL swap immediately
+  squad=squad.filter(id=>id!==swapSource);
+  squad.push(benchPid);
+  bench=bench.filter(id=>id!==benchPid);
+  bench.push(swapSource);
   swapSource=null;
   renderPitch();
   renderBench();
@@ -1753,13 +1757,26 @@ function updateSwapUI(){
 }
 
 function cancelOneSwap(sid){
+  const bid=pendingSwaps[sid];
+  if(bid){
+    // Revert visual swap
+    squad=squad.filter(id=>id!==bid);squad.push(sid);
+    bench=bench.filter(id=>id!==sid);bench.push(bid);
+  }
   delete pendingSwaps[sid];
   renderPitch();renderBench();updateSwapUI();
 }
 
 function cancelAllSwaps(){
+  // Revert all visual swaps
+  for(const[sid,bid] of Object.entries(pendingSwaps)){
+    squad=squad.filter(id=>id!==bid);squad.push(sid);
+    bench=bench.filter(id=>id!==sid);bench.push(bid);
+  }
   pendingSwaps={};swapSource=null;
-  renderPitch();renderBench();updateSwapUI();
+  renderPitch();renderBench();
+  const ui=document.getElementById("transfer-ui");
+  if(ui)ui.innerHTML=`<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px">Tap a starter → then its bench replacement</div>`;
 }
 
 function cancelSwap(){
@@ -1769,12 +1786,9 @@ function cancelSwap(){
 
 async function confirmAllSwaps(){
   if(Object.keys(pendingSwaps).length===0)return;
-  const btn=document.querySelector("[onclick='confirmAllSwaps()']");
-  if(btn){btn.textContent="Saving...";btn.disabled=true;}
+  // Squad/bench already updated visually - just save to DB
   const ops=[];
   for(const[sid,bid] of Object.entries(pendingSwaps)){
-    squad=squad.filter(id=>id!==sid);squad.push(bid);
-    bench=bench.filter(id=>id!==bid);bench.push(sid);
     ops.push(
       del("squads",{manager_id:mgr.id,player_id:sid}),
       ups("squads",{manager_id:mgr.id,player_id:bid},"manager_id,player_id"),
@@ -1785,9 +1799,9 @@ async function confirmAllSwaps(){
   await Promise.all(ops);
   pendingSwaps={};swapSource=null;
   const ui=document.getElementById("transfer-ui");
-  if(ui)ui.innerHTML=`<div style="text-align:center;color:#10b981;font-weight:800;padding:10px">✅ All swaps confirmed!</div>`;
+  if(ui)ui.innerHTML=`<div style="text-align:center;color:#10b981;font-weight:800;padding:10px">🔒 Transfers confirmed & locked!</div>`;
   renderPitch();renderBench();
-  showMsg("✅ Transfers done!");
+  showMsg("✅ Transfers saved!");
 }
 
 function closePlayerModal(e){
