@@ -926,7 +926,10 @@ function renderPlayerList(){
     const highlight=selectingBench&&p.position===selectingBench&&!onBench&&!sel;
     return`<div class="player-row ${sel?"selected":""} ${onBench?"on-bench":""} ${dis?"disabled":""}" onclick="toggleP('${p.id}')" style="${highlight?"border-color:rgba(255,165,0,0.5);background:rgba(255,165,0,0.08)":""}">
       ${p.photo_url?`<img class="player-avatar" src="${e(p.photo_url)}" loading="lazy">`:`<div class="player-avatar-ph">${FL[p.country]}</div>`}
-      <span style="flex:1;font-weight:700;font-size:14px">${e(p.name)}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px">${e(p.name)}</div>
+        ${_totalManagers>0&&_playerPopularity[p.id]?`<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">👥 ${Math.round(_playerPopularity[p.id]/_totalManagers*100)}% picked</div>`:""}
+      </div>
       <span style="font-size:13px;margin-right:4px">${FL[p.country]}</span>
       <span class="pos pos-${p.position}">${p.position}</span>
       ${sel?`<span style="color:#10b981;font-size:16px;margin-left:6px">✓</span>`:""}
