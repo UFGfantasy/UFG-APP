@@ -795,6 +795,8 @@ function renderPitch(){
       ).join("")}
     </div>`;
   }).join("");
+  setTimeout(applySwapClasses,50);
+  renderBench();
 }
 
 function focusPos(pos){
@@ -1712,6 +1714,23 @@ function selectSwapForPitch(pid){
   renderBench();
   updateSwapUI();
   setTimeout(applySwapClasses,50);
+}
+
+function applySwapClasses(){
+  // Find selected starter on pitch
+  document.querySelectorAll('[data-pid]').forEach(slot=>{
+    const pid=slot.getAttribute('data-pid');
+    const pos=slot.getAttribute('data-pos');
+    const imgs=slot.querySelectorAll('img,.pitch-avatar-empty,.bench-avatar,.bench-avatar-empty');
+    imgs.forEach(img=>{
+      img.classList.remove('swap-selected','swap-available');
+      if(swapSource&&pid===swapSource) img.classList.add('swap-selected');
+      const swapSourcePlayer=swapSource?players.find(x=>x.id===swapSource):null;
+      if(swapSource&&pos&&swapSourcePlayer&&pos===swapSourcePlayer.position&&pid!==swapSource&&!Object.values(pendingSwaps).includes(pid)){
+        img.classList.add('swap-available');
+      }
+    });
+  });
 }
 
 function selectBenchForSwap(benchPid,pos){
