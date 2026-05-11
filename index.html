@@ -223,6 +223,7 @@ select.input option{background:#2d1060;color:#fff}
           <button class="ftab" id="tc" onclick="setMode('create')">New account</button>
         </div>
         <input class="input" id="j-input" placeholder="Your username" style="margin-bottom:12px" onkeydown="if(event.key==='Enter')doJoin()">
+        <input class="input" type="email" id="j-email" placeholder="Your email" style="margin-bottom:12px;display:none" onkeydown="if(event.key==='Enter')doJoin()">
         <input class="input" type="password" id="j-pw" placeholder="Password" style="margin-bottom:12px" onkeydown="if(event.key==='Enter')doJoin()">
         <div id="j-country-wrap" style="display:none;margin-bottom:16px">
           <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:8px;letter-spacing:1px">🌍 WHICH COUNTRY DO YOU SUPPORT?</div>
@@ -653,6 +654,7 @@ function setMode(m){
   document.getElementById("join-title").textContent=m==="create"?"CREATE ACCOUNT":"LOGIN";
   document.getElementById("j-btn").textContent=m==="create"?"CREATE & PLAY":"ENTRER";
   document.getElementById("j-err").style.display="none";
+  document.getElementById("j-email").style.display=m==="create"?"block":"none";
   document.getElementById("j-country-wrap").style.display=m==="create"?"block":"none";
   if(m==="create") renderCountryPicker();
   selectedCountry=null;
