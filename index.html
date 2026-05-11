@@ -767,7 +767,7 @@ function renderPitch(){
     const isGK=pos==="GK";
     return`<div class="pitch-row ${cls}" ${isGK?'style="background:rgba(0,0,0,0.15);margin:0 -10px;padding-left:10px;padding-right:10px"':''}>
       ${slotsArr.map(p=>p?`
-        <div class="pitch-slot" onclick="mgr?.team_locked?showPlayerModal('${p.id}'):removeFromSquad('${p.id}')">
+        <div class="pitch-slot" onclick="mgr?.team_locked?(transfersOpen?selectSwapSource('${p.id}'):showPlayerModal('${p.id}')):removeFromSquad('${p.id}')">
           ${p.photo_url?`<img class="pitch-avatar" loading="lazy" src="${e(p.photo_url)}" title="${e(p.name)}" style="${isGK?'border-color:var(--gk);box-shadow:0 0 12px rgba(245,158,11,0.5)':''}">
           `:`<div class="pitch-avatar-empty" style="${isGK?'border-color:var(--gk)':''}"> ${isGK?'🧤':FL[p.country]}</div>`}
           <div class="pitch-name">${e(p.name.split(" ")[0])}</div>
@@ -880,7 +880,7 @@ function renderBench(){
   const el=document.getElementById("bench-view");if(!el)return;
   el.innerHTML=["GK","DEF","MID","ATT"].map(pos=>{
     const p=byPos[pos][0]||null;
-    return`<div style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`}">
+    return`<div style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&transfersOpen&&swapSource?`confirmSwap('${p?p.id:""}')`:(mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`)}">
       ${p
         ?`${p.photo_url?`<img src="${e(p.photo_url)}" style="width:52px;height:52px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,165,0,0.5);display:block;margin:0 auto 4px">`:`<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,165,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto 4px">${FL[p.country]||"?"}</div>`}
         <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.7)">${e(p.name.split(" ")[0])}</div>
@@ -1659,6 +1659,60 @@ async function loadPlayersStanding(){
           <div style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700">PTS</div>
         </div>
       </div>`).join("");
+}
+
+let swapSource=null;
+
+function selectSwapSource(pid){
+  const p=players.find(x=>x.id===pid);if(!p)return;
+  swapSource=pid;
+  // Show transfer UI
+  const ui=document.getElementById("transfer-ui");
+  if(ui)ui.innerHTML=`<div style="margin-top:8px;font-size:13px;color:#fff;font-weight:700">
+    Selected: <span style="color:var(--orange)">${e(p.name)}</span> (${p.position})
+    <br>Now click the bench ${p.position} to swap!
+    <button onclick="cancelSwap()" style="margin-left:10px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:3px 8px;color:#ef4444;cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif">Cancel</button>
+  </div>`;
+  renderPitch();
+  renderBench();
+}
+
+function cancelSwap(){
+  swapSource=null;
+  const ui=document.getElementById("transfer-ui");
+  if(ui)ui.innerHTML="";
+  renderPitch();
+  renderBench();
+}
+
+async function confirmSwap(benchPid){
+  if(!swapSource||!benchPid)return;
+  const starter=players.find(x=>x.id===swapSource);
+  const benchP=players.find(x=>x.id===benchPid);
+  if(!starter||!benchP){swapSource=null;return;}
+  if(starter.position!==benchP.position){
+    showMsg("❌ Same position only!");
+    swapSource=null;
+    return;
+  }
+  // Do the swap
+  squad=squad.filter(id=>id!==swapSource);
+  squad.push(benchPid);
+  bench=bench.filter(id=>id!==benchPid);
+  bench.push(swapSource);
+  // Save to DB
+  await Promise.all([
+    del("squads",{manager_id:mgr.id,player_id:swapSource}),
+    ups("squads",{manager_id:mgr.id,player_id:benchPid},"manager_id,player_id"),
+    del("bench",{manager_id:mgr.id,player_id:benchPid}),
+    ups("bench",{manager_id:mgr.id,player_id:swapSource},"manager_id,player_id"),
+  ]);
+  showMsg("✅ Swap done!");
+  swapSource=null;
+  const ui=document.getElementById("transfer-ui");
+  if(ui)ui.innerHTML="";
+  renderPitch();
+  renderBench();
 }
 
 function closePlayerModal(e){
