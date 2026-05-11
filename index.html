@@ -336,71 +336,19 @@ select.input option{background:#2d1060;color:#fff}
   <div class="page" id="page-rules">
     <div class="section-title">📋 RULES & POINTS</div>
 
-    <!-- HOW TO PLAY -->
-    <div class="glass-dark" style="padding:20px;margin-bottom:14px">
-      <div style="font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:var(--orange);margin-bottom:14px">🏆 HOW TO PLAY</div>
-      <div style="display:grid;gap:10px">
-        ${[
-          ["🌍","Pick your country","Choose 1 country to support at registration. Max 3 players per country in your full squad."],
-          ["👥","Build your squad","Select 15 players: 11 starters + 4 bench (1 GK, 4 DEF, 3 MID, 3 ATT starters · 1 per position on bench)."],
-          ["🔒","Lock your team","Once you have all 15 players, lock your team. No changes after that — except during transfer windows!"],
-          ["⭐","Earn points","Your starters earn points based on real match performances. Bench players earn 0 points."],
-          ["🔮","Predict scores","Predict the score of every match. Exact score = +5pts · Right outcome = +3pts."],
-        ].map(([em,title,desc])=>`
-          <div style="display:flex;gap:12px;align-items:flex-start">
-            <span style="font-size:22px;flex-shrink:0">${em}</span>
-            <div>
-              <div style="font-weight:800;font-size:13px;margin-bottom:2px">${title}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.5">${desc}</div>
-            </div>
-          </div>`).join("")}
+    <div class="glass-dark" style="padding:20px;margin-bottom:12px">
+      <div style="font-family:'Bebas Neue';font-size:18px;letter-spacing:2px;color:var(--orange);margin-bottom:12px">🏆 HOW TO PLAY</div>
+      <div style="display:grid;gap:8px;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6">
+        <div>⚽ Pick <strong>15 players</strong> — 11 starters + 4 bench (1 per position)</div>
+        <div>🌍 Max <strong>3 players per country</strong> across your full squad</div>
+        <div>🔒 <strong>Lock your team</strong> before the tournament — no changes after!</div>
+        <div>⭐ Only <strong>starters earn points</strong> based on real performances</div>
+        <div>🔮 <strong>Predict match scores</strong> — exact score +5pts · right outcome +3pts</div>
+        <div>🔄 <strong>Transfer windows</strong> open during the tournament to swap starters ↔ bench</div>
       </div>
     </div>
 
-    <!-- SQUAD RULES -->
-    <div class="glass-dark" style="padding:20px;margin-bottom:14px">
-      <div style="font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:var(--orange);margin-bottom:14px">⚽ SQUAD RULES</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${[
-          ["1️⃣","GK","1 starter + 1 bench"],
-          ["4️⃣","DEF","4 starters + 1 bench"],
-          ["3️⃣","MID","3 starters + 1 bench"],
-          ["3️⃣","ATT","3 starters + 1 bench"],
-          ["🌍","Per country","Max 3 players (starters + bench combined)"],
-          ["👥","Total","15 players (11 starters + 4 bench)"],
-        ].map(([em,pos,rule])=>`
-          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center">
-            <span style="font-size:18px">${em}</span>
-            <div>
-              <div style="font-weight:800;font-size:12px;color:var(--orange)">${pos}</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.4)">${rule}</div>
-            </div>
-          </div>`).join("")}
-      </div>
-    </div>
-
-    <!-- TRANSFERS -->
-    <div class="glass-dark" style="padding:20px;margin-bottom:14px">
-      <div style="font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:var(--orange);margin-bottom:14px">🔄 TRANSFERS</div>
-      <div style="display:grid;gap:10px">
-        ${[
-          ["🟢","Window opened by admin","Transfer windows are opened and closed by the admin. Stay tuned for announcements!"],
-          ["↔️","Swap starters & bench","When open, swap any starter with a bench player of the same position."],
-          ["✅","Confirm to lock","Once you're happy with your swaps, confirm to save and lock again."],
-          ["🔁","Multiple windows","There may be more than one transfer window during the tournament."],
-        ].map(([em,title,desc])=>`
-          <div style="display:flex;gap:12px;align-items:flex-start">
-            <span style="font-size:20px;flex-shrink:0">${em}</span>
-            <div>
-              <div style="font-weight:800;font-size:13px;margin-bottom:2px">${title}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.5">${desc}</div>
-            </div>
-          </div>`).join("")}
-      </div>
-    </div>
-
-    <!-- POINTS SYSTEM -->
-    <div style="font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:var(--orange);margin-bottom:12px">💰 POINTS SYSTEM</div>
+    <div style="font-family:'Bebas Neue';font-size:18px;letter-spacing:2px;color:var(--orange);margin-bottom:12px">💰 POINTS SYSTEM</div>
     <div id="pts-grid"></div>
   </div>
 
