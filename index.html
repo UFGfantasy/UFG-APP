@@ -186,6 +186,11 @@ select.input option{background:#2d1060;color:#fff}
 </div>
 
 <div id="app" style="display:none">
+  <!-- ANNOUNCEMENT BANNER -->
+  <div id="announcement-bar" style="display:none;background:linear-gradient(135deg,rgba(232,0,58,0.9),rgba(249,115,22,0.9));padding:10px 16px;text-align:center;font-weight:800;font-size:14px;position:sticky;top:64px;z-index:99;backdrop-filter:blur(10px)">
+    <span id="announcement-text"></span>
+  </div>
+
   <div class="nav">
     <div class="nav-inner">
       <div class="nav-logo" onclick="go('home')">
@@ -255,6 +260,7 @@ select.input option{background:#2d1060;color:#fff}
       <div style="display:flex;align-items:center;gap:10px">
         <span id="sq-msg" class="msg-ok" style="display:none"></span>
         <span style="color:rgba(255,255,255,0.4);font-size:13px;font-weight:700" id="sq-count">0/15</span>
+        <button onclick="shareMyTeam()" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-weight:800;font-size:13px;cursor:pointer;font-family:'Nunito',sans-serif">📸 Share</button>
         <button id="lock-btn" onclick="lockTeam()" style="display:none;padding:7px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:'Nunito',sans-serif">
           🔒 Lock Team
         </button>
@@ -545,6 +551,8 @@ async function init(){
   document.getElementById("app").style.display="block";
   loadTop5();
   setTimeout(startCountdown, 100);
+  loadAnnouncement();
+  startLbAutoRefresh();
 }
 
 function renderPts(){
@@ -647,7 +655,7 @@ function go(name){
   if(name==="squad")loadSquad();
   if(name==="pronostics")loadPros();
   if(name==="leaderboard")loadLB();
-  if(name==="home"){loadTop5();startCountdown();}
+  if(name==="home"){loadTop5();startCountdown();loadAnnouncement();}
   if(name==="players-standing")loadPlayersStanding();
   if(name==="rules")renderPts();
 }
@@ -1531,7 +1539,156 @@ async function renderAdmDashboard(){
             <button onclick="adminResetPw('${m.id}','${e(m.username)}')" style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:3px 8px;color:var(--orange);cursor:pointer;font-size:11px;font-weight:700;font-family:'Nunito',sans-serif">🔑</button>
           </div>`).join(""):""}
       </div>
-    </div>`;
+    </div>
+    <div class="glass-dark" style="padding:16px;margin-top:16px">
+      <div style="font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;margin-bottom:12px;color:var(--orange)">📢 ANNOUNCEMENT</div>
+      <input class="input" id="announcement-input" placeholder="Type a message for all managers..." style="margin-bottom:10px" value="">
+      <div style="display:flex;gap:8px">
+        <button onclick="saveAnnouncement()" class="btn btn-primary" style="flex:1;font-size:14px">📢 Publish</button>
+        <button onclick="clearAnnouncement()" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">Clear</button>
+      </div>
+    </div>\`;
+}
+
+// ANNOUNCEMENT
+async function loadAnnouncement(){
+  const res=await get("app_settings",{select:"*",eq:{key:"announcement"}});
+  if(Array.isArray(res)&&res[0]?.value){
+    const msg=res[0].value;
+    const bar=document.getElementById("announcement-bar");
+    const txt=document.getElementById("announcement-text");
+    if(bar&&txt){
+      if(msg.trim()){bar.style.display="block";txt.textContent=msg;}
+      else bar.style.display="none";
+    }
+  }
+}
+
+async function saveAnnouncement(){
+  const msg=document.getElementById("announcement-input")?.value.trim()||"";
+  await ups("app_settings",{key:"announcement",value:msg},"key");
+  loadAnnouncement();
+  alert("✅ Announcement published!");
+}
+
+async function clearAnnouncement(){
+  await ups("app_settings",{key:"announcement",value:""},"key");
+  document.getElementById("announcement-bar").style.display="none";
+  document.getElementById("announcement-input").value="";
+}
+
+// AUTO-REFRESH LEADERBOARD
+let _lbRefreshInterval=null;
+function startLbAutoRefresh(){
+  if(_lbRefreshInterval)return;
+  _lbRefreshInterval=setInterval(()=>{
+    if(document.getElementById("page-leaderboard")?.classList.contains("active")){
+      loadLB();
+    }
+  },30000); // every 30 seconds
+}
+
+// SHARE TEAM
+async function shareMyTeam(){
+  if(!mgr){alert("Please login first!");return;}
+  const canvas=document.createElement("canvas");
+  canvas.width=600;canvas.height=800;
+  const ctx=canvas.getContext("2d");
+
+  // Background gradient
+  const grad=ctx.createLinearGradient(0,0,600,800);
+  grad.addColorStop(0,"#1a1040");
+  grad.addColorStop(0.5,"#3d0a5e");
+  grad.addColorStop(1,"#e8003a");
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,600,800);
+
+  // Title
+  ctx.fillStyle="#fff";
+  ctx.font="bold 28px Arial";
+  ctx.textAlign="center";
+  ctx.fillText("UFG FANTASY 2026",300,50);
+  ctx.font="bold 22px Arial";
+  ctx.fillStyle="rgba(255,255,255,0.7)";
+  ctx.fillText(mgr.username+"'s Team",300,85);
+
+  // Draw pitch background
+  ctx.fillStyle="rgba(21,128,61,0.8)";
+  ctx.roundRect(40,110,520,550,12);
+  ctx.fill();
+
+  // Formation
+  const byPos={GK:[],DEF:[],MID:[],ATT:[]};
+  squad.forEach(id=>{
+    const p=players.find(x=>x.id===id);
+    if(p&&byPos[p.position])byPos[p.position].push(p);
+  });
+
+  const rows=[
+    {pos:"ATT",y:180,players:byPos["ATT"]},
+    {pos:"MID",y:310,players:byPos["MID"]},
+    {pos:"DEF",y:440,players:byPos["DEF"]},
+    {pos:"GK",y:570,players:byPos["GK"]},
+  ];
+
+  const posColors={GK:"#f59e0b",DEF:"#22c55e",MID:"#3b82f6",ATT:"#ef4444"};
+
+  for(const row of rows){
+    const count=row.players.length;
+    const spacing=500/(count+1);
+    for(let i=0;i<count;i++){
+      const p=row.players[i];
+      const x=50+spacing*(i+1);
+      const y=row.y;
+      // Circle
+      ctx.beginPath();
+      ctx.arc(x,y,28,0,Math.PI*2);
+      ctx.fillStyle=posColors[row.pos]||"#fff";
+      ctx.fill();
+      // Photo
+      if(p.photo_url){
+        try{
+          const img=await loadImg(p.photo_url);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x,y,26,0,Math.PI*2);
+          ctx.clip();
+          ctx.drawImage(img,x-26,y-26,52,52);
+          ctx.restore();
+        }catch(e){}
+      }
+      // Name
+      ctx.fillStyle="#fff";
+      ctx.font="bold 11px Arial";
+      ctx.textAlign="center";
+      ctx.shadowColor="rgba(0,0,0,0.8)";
+      ctx.shadowBlur=4;
+      ctx.fillText(p.name.split(" ")[0].substring(0,8),x,y+44);
+      ctx.shadowBlur=0;
+    }
+  }
+
+  // Footer
+  ctx.fillStyle="rgba(255,255,255,0.5)";
+  ctx.font="14px Arial";
+  ctx.textAlign="center";
+  ctx.fillText("kenkowada.github.io/UFG-APP",300,750);
+
+  // Download
+  const link=document.createElement("a");
+  link.download=mgr.username+"-team.png";
+  link.href=canvas.toDataURL();
+  link.click();
+}
+
+function loadImg(src){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=src;
+  });
 }
 
 async function adminResetPw(managerId, username){
