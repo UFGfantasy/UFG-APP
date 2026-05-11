@@ -371,11 +371,13 @@ select.input option{background:#2d1060;color:#fff}
       </div>
       <div class="filter-row" style="margin-bottom:20px">
         <button class="ftab on" id="at-players" onclick="admTab('players')">👥 Players</button>
+        <button class="ftab" id="at-lineups" onclick="admTab('lineups')">📋 Lineups</button>
         <button class="ftab" id="at-stats" onclick="admTab('stats')">📊 Stats</button>
         <button class="ftab" id="at-results" onclick="admTab('results')">🏁 Results</button>
         <button class="ftab" id="at-transfers" onclick="admTab('transfers')">🔄 Transfers</button>
       </div>
       <div id="adm-players"></div>
+      <div id="adm-lineups" style="display:none"></div>
       <div id="adm-stats" style="display:none"></div>
       <div id="adm-results" style="display:none"></div>
       <div id="adm-transfers" style="display:none"></div>
@@ -1185,14 +1187,178 @@ function doAdmLogin(){
 }
 function admLogout(){admIn=false;document.getElementById("adm-login").style.display="block";document.getElementById("adm-panel").style.display="none";}
 function admTab(t){
-  ["players","stats","results","transfers"].forEach(x=>{
+  ["players","lineups","stats","results","transfers"].forEach(x=>{
     document.getElementById("at-"+x).classList.toggle("on",x===t);
     document.getElementById("adm-"+x).style.display=x===t?"block":"none";
   });
   if(t==="players")renderAdmPlayers();
+  if(t==="lineups")renderAdmLineups();
   if(t==="stats")renderAdmStats(true);
   if(t==="results")renderAdmResults();
   if(t==="transfers")renderAdmTransfers();
+}
+
+// EDIT PLAYER MODAL
+function editPlayer(pid){
+  const p=players.find(x=>x.id===pid);if(!p)return;
+  const modal=document.getElementById('manager-modal');
+  const el=document.getElementById('manager-modal-content');
+  el.innerHTML=`
+    <div style="font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;margin-bottom:20px">✏️ EDIT PLAYER</div>
+    <div style="display:grid;gap:10px">
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;margin-bottom:4px">NAME</div>
+        <input class="input" id="edit-name" value="${e(p.name)}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;margin-bottom:4px">COUNTRY</div>
+          <select class="input" id="edit-country">
+            ${["France","Angleterre","Espagne","Italie","Hongrie","Allemagne"].map(c=>`<option value="${c}" ${p.country===c?"selected":""}>${FL[c]||c} ${c}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;margin-bottom:4px">POSITION</div>
+          <select class="input" id="edit-position">
+            ${["GK","DEF","MID","ATT"].map(pos=>`<option value="${pos}" ${p.position===pos?"selected":""}>${pos}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;margin-bottom:4px">PHOTO</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${p.photo_url?`<img src="${e(p.photo_url)}" style="width:44px;height:44px;border-radius:50%;object-fit:contain">`:""}
+          <button class="btn" onclick="editPhoto('${p.id}')" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);font-size:13px;padding:8px 14px">📷 Change Photo</button>
+        </div>
+      </div>
+      <div id="edit-msg" style="display:none;font-size:13px;font-weight:700"></div>
+      <button class="btn btn-primary" style="width:100%;font-size:16px" onclick="saveEditPlayer('${p.id}')">💾 SAVE CHANGES</button>
+    </div>`;
+  modal.style.display='flex';
+}
+
+async function saveEditPlayer(pid){
+  const name=document.getElementById('edit-name')?.value.trim();
+  const country=document.getElementById('edit-country')?.value;
+  const position=document.getElementById('edit-position')?.value;
+  const msg=document.getElementById('edit-msg');
+  if(!name){if(msg){msg.textContent="❌ Enter a name";msg.style.color="#ef4444";msg.style.display="block";}return;}
+  await pat('players',{name,country,position},{id:pid});
+  const p=players.find(x=>x.id===pid);
+  if(p){p.name=name;p.country=country;p.position=position;}
+  if(msg){msg.textContent="✅ Saved!";msg.style.color="#10b981";msg.style.display="block";}
+  setTimeout(()=>{document.getElementById('manager-modal').style.display='none';renderAdmPlist();},1000);
+}
+
+// LINEUPS ADMIN
+let selectedLineupMatch=null;
+let lineupData={};
+
+async function renderAdmLineups(){
+  if(!players.length){
+    const p=await get("players",{select:"*",order:"country,position"});
+    players=Array.isArray(p)?p:[];
+  }
+  const mt=await get("matches",{select:"*",order:"match_date"});
+  matches=Array.isArray(mt)?mt:[];
+  if(!selectedLineupMatch&&matches.length)selectedLineupMatch=matches[0].id;
+
+  document.getElementById("adm-lineups").innerHTML=`
+    <div style="display:grid;gap:6px;margin-bottom:16px">
+      ${matches.map(m=>`
+        <button onclick="selectLineupMatch('${m.id}')"
+          style="padding:10px 14px;background:${selectedLineupMatch===m.id?"rgba(232,0,58,0.15)":"rgba(255,255,255,0.05)"};border:1px solid ${selectedLineupMatch===m.id?"rgba(232,0,58,0.4)":"rgba(255,255,255,0.08)"};border-radius:8px;color:#fff;cursor:pointer;text-align:left;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700">
+          ${FL[m.home_country]||m.home_country} ${e(m.home_country)} vs ${e(m.away_country)} ${FL[m.away_country]||m.away_country}
+          <span style="float:right;font-size:11px;color:rgba(255,255,255,0.3)">${fmtDate(m.match_date)}</span>
+        </button>`).join("")}
+    </div>
+    <div id="lineup-form"></div>`;
+  loadLineupForm();
+}
+
+async function selectLineupMatch(id){
+  selectedLineupMatch=id;
+  renderAdmLineups();
+}
+
+async function loadLineupForm(){
+  if(!selectedLineupMatch)return;
+  const res=await get("match_lineups",{select:"*",eq:{match_id:selectedLineupMatch}});
+  lineupData={};
+  if(Array.isArray(res))res.forEach(l=>lineupData[l.player_id]=l.is_starter);
+
+  const match=matches.find(m=>m.id===selectedLineupMatch);if(!match)return;
+  const matchPlayers=players.filter(p=>p.country===match.home_country||p.country===match.away_country);
+  const byCountry={[match.home_country]:matchPlayers.filter(p=>p.country===match.home_country),[match.away_country]:matchPlayers.filter(p=>p.country===match.away_country)};
+
+  const el=document.getElementById("lineup-form");if(!el)return;
+  el.innerHTML=`
+    <div class="glass-dark" style="padding:16px">
+      <div style="font-family:'Bebas Neue';font-size:18px;letter-spacing:2px;margin-bottom:14px">
+        ${FL[match.home_country]||""} ${e(match.home_country)} vs ${e(match.away_country)} ${FL[match.away_country]||""}
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;font-weight:700">
+        ✅ = Starter (earns base points) · ☐ = Did not start
+      </div>
+      ${Object.entries(byCountry).map(([country,cplayers])=>`
+        <div style="margin-bottom:16px">
+          <div style="font-weight:800;font-size:13px;margin-bottom:8px;color:rgba(255,255,255,0.6)">${FL[country]||""} ${country}</div>
+          <div style="display:grid;gap:6px">
+            ${cplayers.map(p=>`
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;cursor:pointer;border:1px solid ${lineupData[p.id]?"rgba(16,185,129,0.3)":"rgba(255,255,255,0.06)"}">
+                <input type="checkbox" id="lu-${p.id}" ${lineupData[p.id]?"checked":""} onchange="toggleLineup('${p.id}',this.checked)"
+                  style="width:18px;height:18px;accent-color:#10b981;cursor:pointer">
+                ${p.photo_url?`<img src="${e(p.photo_url)}" style="width:32px;height:32px;border-radius:50%;object-fit:contain">`:`<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:14px">${FL[p.country]||"?"}</div>`}
+                <span style="flex:1;font-weight:700">${e(p.name)}</span>
+                <span class="pos pos-${p.position}" style="font-size:10px">${p.position}</span>
+              </label>`).join("")}
+          </div>
+        </div>`).join("")}
+      <button onclick="saveLineup()" id="lineup-save-btn"
+        style="width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;font-weight:800;font-size:15px;cursor:pointer;font-family:'Nunito',sans-serif;margin-top:8px">
+        💾 Save Lineup & Update Base Points
+      </button>
+    </div>`;
+}
+
+function toggleLineup(pid,isStarter){
+  lineupData[pid]=isStarter;
+  const label=document.getElementById("lu-"+pid)?.closest("label");
+  if(label)label.style.borderColor=isStarter?"rgba(16,185,129,0.3)":"rgba(255,255,255,0.06)";
+}
+
+async function saveLineup(){
+  const btn=document.getElementById("lineup-save-btn");
+  if(btn){btn.textContent="Saving...";btn.disabled=true;}
+  const match=matches.find(m=>m.id===selectedLineupMatch);if(!match)return;
+  const matchPlayers=players.filter(p=>p.country===match.home_country||p.country===match.away_country);
+
+  // Save lineups
+  const lineupOps=matchPlayers.map(p=>
+    ups("match_lineups",{match_id:selectedLineupMatch,player_id:p.id,is_starter:!!lineupData[p.id]},"match_id,player_id")
+  );
+  await Promise.all(lineupOps);
+
+  // Recalculate matches_started for all players from all lineups
+  const allLineups=await get("match_lineups",{select:"*"});
+  if(Array.isArray(allLineups)){
+    const starterCounts={};
+    allLineups.filter(l=>l.is_starter).forEach(l=>{
+      starterCounts[l.player_id]=(starterCounts[l.player_id]||0)+1;
+    });
+    // Update player_stats for affected players
+    const updateOps=matchPlayers.map(p=>
+      ups("player_stats",{player_id:p.id,matches_played:starterCounts[p.id]||0},"player_id")
+    );
+    await Promise.all(updateOps);
+    // Update local lstats
+    matchPlayers.forEach(p=>{
+      if(!lstats[p.id])lstats[p.id]={};
+      lstats[p.id].matches_played=starterCounts[p.id]||0;
+    });
+  }
+
+  if(btn){btn.textContent="✅ Saved!";setTimeout(()=>{btn.textContent="💾 Save Lineup & Update Base Points";btn.disabled=false;},2000);}
 }
 
 function renderAdmPlayers(){
@@ -1268,6 +1434,7 @@ function renderAdmPlist(){
         <span style="flex:1;font-weight:700">${e(p.name)}</span>
         <span style="font-size:13px;margin-right:4px">${FL[p.country]||p.country}</span>
         <span class="pos pos-${p.position}">${p.position}</span>
+        <button onclick="editPlayer('${p.id}')" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;padding:2px 6px">✏️</button>
         <button onclick="rmPlayer('${p.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:2px 8px;line-height:1">✕</button>
       </div>`).join("");
 }
