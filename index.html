@@ -144,6 +144,12 @@ select.input option{background:#2d1060;color:#fff}
 .msg-ok{color:#10b981;font-size:13px;font-weight:700}
 .msg-err{color:#ef4444;font-size:13px;font-weight:700;margin-bottom:10px}
 
+/* SWAP ANIMATIONS */
+@keyframes pulseOrange{0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.6)}50%{box-shadow:0 0 20px rgba(249,115,22,1)}}
+@keyframes pulseGreen{0%,100%{box-shadow:0 0 8px rgba(16,185,129,0.6)}50%{box-shadow:0 0 20px rgba(16,185,129,1)}}
+.swap-selected{border-color:var(--orange)!important;animation:pulseOrange 1s infinite}
+.swap-available{border-color:#10b981!important;animation:pulseGreen 1s infinite}
+
 /* PLAYER MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease}
 .modal-box{background:linear-gradient(135deg,#1a1040,#3d0a5e);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:24px;max-width:340px;width:100%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
@@ -878,9 +884,11 @@ let swapSource=null;
 function renderBench(){
   const byPos=getBenchByPos();
   const el=document.getElementById("bench-view");if(!el)return;
+  const swapSourcePlayer=swapSource?players.find(x=>x.id===swapSource):null;
   el.innerHTML=["GK","DEF","MID","ATT"].map(pos=>{
     const p=byPos[pos][0]||null;
-    return`<div style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&transfersOpen&&swapSource?`confirmSwap('${p?p.id:""}')`:(mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`)}">
+    const isSwapTarget=swapSource&&swapSourcePlayer?.position===pos&&p;
+    return`<div style="text-align:center;cursor:pointer" onclick="${mgr?.team_locked&&transfersOpen&&swapSource?`selectBenchForSwap('${p?p.id:""}','${pos}')`:(mgr?.team_locked&&!transfersOpen?`showPlayerModal('${p?p.id:""}')`:p?`removeBench('${p.id}')`:selectingBench?`''`:`startBenchSelect('${pos}')`)}">
       ${p
         ?`${p.photo_url?`<img src="${e(p.photo_url)}" style="width:52px;height:52px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,165,0,0.5);display:block;margin:0 auto 4px">`:`<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,165,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto 4px">${FL[p.country]||"?"}</div>`}
         <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.7)">${e(p.name.split(" ")[0])}</div>
@@ -1684,32 +1692,55 @@ function cancelSwap(){
   renderBench();
 }
 
-async function confirmSwap(benchPid){
+let pendingSwapBench=null;
+
+function selectBenchForSwap(benchPid,pos){
   if(!swapSource||!benchPid)return;
   const starter=players.find(x=>x.id===swapSource);
   const benchP=players.find(x=>x.id===benchPid);
-  if(!starter||!benchP){swapSource=null;return;}
-  if(starter.position!==benchP.position){
-    showMsg("❌ Same position only!");
-    swapSource=null;
-    return;
-  }
+  if(!starter||!benchP)return;
+  if(starter.position!==pos){showMsg("❌ Same position only!");return;}
+  pendingSwapBench=benchPid;
+  // Show confirmation in transfer UI
+  const ui=document.getElementById("transfer-ui");
+  if(ui)ui.innerHTML=`
+    <div style="margin-top:10px;background:rgba(255,255,255,0.05);border-radius:10px;padding:12px">
+      <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:10px">
+        🔄 Swap <span style="color:var(--orange);font-weight:800">${e(starter.name)}</span> 
+        ↔ <span style="color:#10b981;font-weight:800">${e(benchP.name)}</span> ?
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="confirmSwap()" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif">
+          ✅ Confirm Swap
+        </button>
+        <button onclick="cancelSwap()" style="padding:10px 16px;border-radius:8px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:#ef4444;font-weight:800;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif">
+          ✕ Cancel
+        </button>
+      </div>
+    </div>`;
+}
+
+async function confirmSwap(){
+  if(!swapSource||!pendingSwapBench)return;
+  const starter=players.find(x=>x.id===swapSource);
+  const benchP=players.find(x=>x.id===pendingSwapBench);
+  if(!starter||!benchP)return;
   // Do the swap
   squad=squad.filter(id=>id!==swapSource);
-  squad.push(benchPid);
-  bench=bench.filter(id=>id!==benchPid);
+  squad.push(pendingSwapBench);
+  bench=bench.filter(id=>id!==pendingSwapBench);
   bench.push(swapSource);
   // Save to DB
   await Promise.all([
     del("squads",{manager_id:mgr.id,player_id:swapSource}),
-    ups("squads",{manager_id:mgr.id,player_id:benchPid},"manager_id,player_id"),
-    del("bench",{manager_id:mgr.id,player_id:benchPid}),
+    ups("squads",{manager_id:mgr.id,player_id:pendingSwapBench},"manager_id,player_id"),
+    del("bench",{manager_id:mgr.id,player_id:pendingSwapBench}),
     ups("bench",{manager_id:mgr.id,player_id:swapSource},"manager_id,player_id"),
   ]);
-  showMsg("✅ Swap done!");
-  swapSource=null;
+  showMsg("✅ Swap confirmed!");
+  swapSource=null;pendingSwapBench=null;
   const ui=document.getElementById("transfer-ui");
-  if(ui)ui.innerHTML="";
+  if(ui)ui.innerHTML=`<div style="text-align:center;color:#10b981;font-weight:800;padding:8px">✅ Transfer complete! Window still open for more swaps.</div>`;
   renderPitch();
   renderBench();
 }
