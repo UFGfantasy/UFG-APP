@@ -1,0 +1,22 @@
+{
+  "name": "UFG Fantasy 2026",
+  "short_name": "UFG Fantasy",
+  "description": "UFG Fantasy Football 2026 - Villmar Germany",
+  "start_url": "/UFG-APP/",
+  "display": "standalone",
+  "background_color": "#060610",
+  "theme_color": "#e8003a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://yptriimymqdhqigxsfrk.supabase.co/storage/v1/object/public/players/ufg-logo-v2.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://yptriimymqdhqigxsfrk.supabase.co/storage/v1/object/public/players/ufg-logo-v2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
