@@ -186,11 +186,6 @@ select.input option{background:#2d1060;color:#fff}
 </div>
 
 <div id="app" style="display:none">
-  <!-- ANNOUNCEMENT BANNER -->
-  <div id="announcement-bar" style="display:none;background:linear-gradient(135deg,rgba(232,0,58,0.9),rgba(249,115,22,0.9));padding:10px 16px;text-align:center;font-weight:800;font-size:14px;position:sticky;top:64px;z-index:99;backdrop-filter:blur(10px)">
-    <span id="announcement-text"></span>
-  </div>
-
   <div class="nav">
     <div class="nav-inner">
       <div class="nav-logo" onclick="go('home')">
@@ -339,6 +334,7 @@ select.input option{background:#2d1060;color:#fff}
   <!-- LEADERBOARD -->
   <div class="page" id="page-leaderboard">
     <div class="section-title">🏆 STANDINGS</div>
+    <div id="standings-announcement" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,rgba(232,0,58,0.15),rgba(249,115,22,0.15));border:1px solid rgba(232,0,58,0.3);border-radius:12px;padding:12px 16px;text-align:center;font-weight:800;font-size:14px"></div>
     <div id="lb-list"></div>
   </div>
 
@@ -552,7 +548,6 @@ async function init(){
   loadTop5();
   setTimeout(startCountdown, 100);
   loadAnnouncement();
-  startLbAutoRefresh();
 }
 
 function renderPts(){
@@ -654,7 +649,7 @@ function go(name){
   const nb=document.getElementById("n-"+name);if(nb)nb.classList.add("on");
   if(name==="squad")loadSquad();
   if(name==="pronostics")loadPros();
-  if(name==="leaderboard")loadLB();
+  if(name==="leaderboard"){loadLB();loadAnnouncement();}
   if(name==="home"){loadTop5();startCountdown();loadAnnouncement();}
   if(name==="players-standing")loadPlayersStanding();
   if(name==="rules")renderPts();
@@ -1553,15 +1548,13 @@ async function renderAdmDashboard(){
 // ANNOUNCEMENT
 async function loadAnnouncement(){
   const res=await get("app_settings",{select:"*",eq:{key:"announcement"}});
-  if(Array.isArray(res)&&res[0]?.value){
-    const msg=res[0].value;
-    const bar=document.getElementById("announcement-bar");
-    const txt=document.getElementById("announcement-text");
-    if(bar&&txt){
-      if(msg.trim()){bar.style.display="block";txt.textContent=msg;}
-      else bar.style.display="none";
-    }
-  }
+  const msg=Array.isArray(res)&&res[0]?.value?res[0].value.trim():"";
+  ["home-announcement","standings-announcement"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(msg){el.textContent="📢 "+msg;el.style.display="block";}
+    else el.style.display="none";
+  });
 }
 
 async function saveAnnouncement(){
@@ -1577,45 +1570,64 @@ async function clearAnnouncement(){
   document.getElementById("announcement-input").value="";
 }
 
-// AUTO-REFRESH LEADERBOARD
-let _lbRefreshInterval=null;
-function startLbAutoRefresh(){
-  if(_lbRefreshInterval)return;
-  _lbRefreshInterval=setInterval(()=>{
-    if(document.getElementById("page-leaderboard")?.classList.contains("active")){
-      loadLB();
-    }
-  },30000); // every 30 seconds
-}
+
 
 // SHARE TEAM
 async function shareMyTeam(){
   if(!mgr){alert("Please login first!");return;}
+  const W=700,H=950;
   const canvas=document.createElement("canvas");
-  canvas.width=600;canvas.height=800;
+  canvas.width=W;canvas.height=H;
   const ctx=canvas.getContext("2d");
 
-  // Background gradient
-  const grad=ctx.createLinearGradient(0,0,600,800);
-  grad.addColorStop(0,"#1a1040");
-  grad.addColorStop(0.5,"#3d0a5e");
-  grad.addColorStop(1,"#e8003a");
+  // Dark background
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,"#0d0820");
+  grad.addColorStop(1,"#1a0535");
   ctx.fillStyle=grad;
-  ctx.fillRect(0,0,600,800);
+  ctx.fillRect(0,0,W,H);
 
-  // Title
+  // Header
   ctx.fillStyle="#fff";
-  ctx.font="bold 28px Arial";
+  ctx.font="bold 32px Arial";
   ctx.textAlign="center";
-  ctx.fillText("UFG FANTASY 2026",300,50);
-  ctx.font="bold 22px Arial";
-  ctx.fillStyle="rgba(255,255,255,0.7)";
-  ctx.fillText(mgr.username+"'s Team",300,85);
+  ctx.fillText("⚽ UFG FANTASY 2026",W/2,52);
+  ctx.font="bold 20px Arial";
+  ctx.fillStyle="rgba(249,115,22,1)";
+  ctx.fillText(mgr.username.toUpperCase()+"'S TEAM",W/2,85);
 
-  // Draw pitch background
-  ctx.fillStyle="rgba(21,128,61,0.8)";
-  ctx.roundRect(40,110,520,550,12);
+  // Pitch
+  const px=30,py=110,pw=W-60,ph=720;
+  // Green pitch
+  const pitchGrad=ctx.createLinearGradient(px,py,px,py+ph);
+  pitchGrad.addColorStop(0,"#166534");
+  pitchGrad.addColorStop(0.5,"#15803d");
+  pitchGrad.addColorStop(1,"#166534");
+  ctx.fillStyle=pitchGrad;
+  ctx.beginPath();
+  ctx.moveTo(px+12,py);ctx.lineTo(px+pw-12,py);ctx.quadraticCurveTo(px+pw,py,px+pw,py+12);
+  ctx.lineTo(px+pw,py+ph-12);ctx.quadraticCurveTo(px+pw,py+ph,px+pw-12,py+ph);
+  ctx.lineTo(px+12,py+ph);ctx.quadraticCurveTo(px,py+ph,px,py+ph-12);
+  ctx.lineTo(px,py+12);ctx.quadraticCurveTo(px,py,px+12,py);
   ctx.fill();
+
+  // Pitch lines
+  ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=2;
+  // Border
+  ctx.strokeRect(px+16,py+16,pw-32,ph-32);
+  // Centre line
+  ctx.beginPath();ctx.moveTo(px+16,py+ph/2);ctx.lineTo(px+pw-16,py+ph/2);ctx.stroke();
+  // Centre circle
+  ctx.beginPath();ctx.arc(W/2,py+ph/2,55,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(W/2,py+ph/2,4,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,0.25)";ctx.fill();
+  // Penalty areas
+  const paW=220,paH=120;
+  ctx.strokeRect(W/2-paW/2,py+16,paW,paH); // top
+  ctx.strokeRect(W/2-paW/2,py+ph-16-paH,paW,paH); // bottom
+  // Goal areas
+  const gaW=110,gaH=50;
+  ctx.strokeRect(W/2-gaW/2,py+16,gaW,gaH);
+  ctx.strokeRect(W/2-gaW/2,py+ph-16-gaH,gaW,gaH);
 
   // Formation
   const byPos={GK:[],DEF:[],MID:[],ATT:[]};
@@ -1625,59 +1637,68 @@ async function shareMyTeam(){
   });
 
   const rows=[
-    {pos:"ATT",y:180,players:byPos["ATT"]},
-    {pos:"MID",y:310,players:byPos["MID"]},
-    {pos:"DEF",y:440,players:byPos["DEF"]},
-    {pos:"GK",y:570,players:byPos["GK"]},
+    {pos:"ATT",y:py+155,players:byPos["ATT"]},
+    {pos:"MID",y:py+310,players:byPos["MID"]},
+    {pos:"DEF",y:py+465,players:byPos["DEF"]},
+    {pos:"GK",y:py+615,players:byPos["GK"]},
   ];
 
   const posColors={GK:"#f59e0b",DEF:"#22c55e",MID:"#3b82f6",ATT:"#ef4444"};
+  const R=36; // player circle radius
 
   for(const row of rows){
     const count=row.players.length;
-    const spacing=500/(count+1);
+    if(!count)continue;
+    const spacing=pw/(count+1);
     for(let i=0;i<count;i++){
       const p=row.players[i];
-      const x=50+spacing*(i+1);
+      const x=px+spacing*(i+1);
       const y=row.y;
-      // Circle
-      ctx.beginPath();
-      ctx.arc(x,y,28,0,Math.PI*2);
-      ctx.fillStyle=posColors[row.pos]||"#fff";
-      ctx.fill();
+      // Shadow
+      ctx.shadowColor="rgba(0,0,0,0.5)";ctx.shadowBlur=10;
+      // Circle bg
+      ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);
+      ctx.fillStyle=posColors[row.pos]||"#fff";ctx.fill();
+      ctx.shadowBlur=0;
       // Photo
       if(p.photo_url){
         try{
           const img=await loadImg(p.photo_url);
           ctx.save();
-          ctx.beginPath();
-          ctx.arc(x,y,26,0,Math.PI*2);
-          ctx.clip();
-          ctx.drawImage(img,x-26,y-26,52,52);
+          ctx.beginPath();ctx.arc(x,y,R-2,0,Math.PI*2);ctx.clip();
+          ctx.drawImage(img,x-(R-2),y-(R-2),(R-2)*2,(R-2)*2);
           ctx.restore();
         }catch(e){}
       }
+      // Ring
+      ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,0.8)";ctx.lineWidth=2;ctx.stroke();
+      // Name bg pill
+      const name=p.name.split(" ")[0].substring(0,9);
+      ctx.font="bold 13px Arial";
+      const tw=ctx.measureText(name).width;
+      ctx.fillStyle="rgba(0,0,0,0.7)";
+      ctx.beginPath();
+      ctx.roundRect(x-tw/2-6,y+R+4,tw+12,20,6);
+      ctx.fill();
       // Name
-      ctx.fillStyle="#fff";
-      ctx.font="bold 11px Arial";
-      ctx.textAlign="center";
-      ctx.shadowColor="rgba(0,0,0,0.8)";
-      ctx.shadowBlur=4;
-      ctx.fillText(p.name.split(" ")[0].substring(0,8),x,y+44);
+      ctx.fillStyle="#fff";ctx.textAlign="center";
+      ctx.shadowColor="rgba(0,0,0,0.8)";ctx.shadowBlur=4;
+      ctx.fillText(name,x,y+R+18);
       ctx.shadowBlur=0;
     }
   }
 
   // Footer
-  ctx.fillStyle="rgba(255,255,255,0.5)";
+  ctx.fillStyle="rgba(255,255,255,0.4)";
   ctx.font="14px Arial";
   ctx.textAlign="center";
-  ctx.fillText("kenkowada.github.io/UFG-APP",300,750);
+  ctx.fillText("kenkowada.github.io/UFG-APP · UFG 2026 · Villmar",W/2,H-20);
 
   // Download
   const link=document.createElement("a");
-  link.download=mgr.username+"-team.png";
-  link.href=canvas.toDataURL();
+  link.download=mgr.username+"-UFG-team.png";
+  link.href=canvas.toDataURL("image/png");
   link.click();
 }
 
