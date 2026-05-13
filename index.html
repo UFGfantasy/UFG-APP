@@ -700,10 +700,11 @@ function setMode(m){
 }
 function renderCountryPicker(){
   const C2=["France","Angleterre","Espagne","Italie","Hongrie","Allemagne"];
+  const EN={"France":"France","Angleterre":"England","Espagne":"Spain","Italie":"Italy","Hongrie":"Hungary","Allemagne":"Germany"};
   document.getElementById("j-countries").innerHTML=C2.map(c=>`
     <button onclick="pickCountry('${c}',this)" style="padding:10px 6px;border-radius:10px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#fff;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;transition:all .15s;text-align:center">
       <div style="margin-bottom:4px">${FL2[c]}</div>
-      <div style="font-size:10px;opacity:0.7">${c}</div>
+      <div style="font-size:10px;opacity:0.7">${EN[c]||c}</div>
     </button>`).join("");
 }
 function pickCountry(c,btn){
