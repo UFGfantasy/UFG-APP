@@ -1240,35 +1240,62 @@ async function setPro(mid,pred){
 
 // LEADERBOARD
 async function loadLB(){
-  const[mg,sq,st,pr,mt]=await Promise.all([get("managers",{select:"*"}),get("squads",{select:"manager_id,player_id"}),get("player_stats",{select:"*"}),get("pronostics",{select:"*"}),get("matches",{select:"*"})]);
+  const[mg,sq,st,pr,mt,bn]=await Promise.all([
+    get("managers",{select:"*"}),
+    get("squads",{select:"manager_id,player_id"}),
+    get("player_stats",{select:"*"}),
+    get("pronostics",{select:"*"}),
+    get("matches",{select:"*"}),
+    get("bench",{select:"manager_id,player_id"})
+  ]);
   if(!Array.isArray(mg))return;
   const board=calcBoard(mg,sq,st,pr,mt);
   const cols=["#FFD700","#C0C0C0","#CD7F32"];
   const el=document.getElementById("lb-list");
-  if(!board.length){el.innerHTML=`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px;font-weight:700">Aucun manager inscrit</div>`;return;}
-  el.innerHTML=board.map((m,i)=>`
-    <div>
-      <div class="lb-row ${i===0?"gold":""}" onclick="toggleLB('lbs-${m.id}')">
-        <span class="bebas" style="font-size:26px;width:32px;text-align:center;color:${cols[i]||"rgba(255,255,255,0.2)"}">${i+1}</span>
-        <span style="flex:1;font-weight:800;cursor:pointer" onclick="event.stopPropagation();showManagerModal('${m.id}','${m.username}')">${e(m.username)} <span style="font-size:11px;color:rgba(255,255,255,0.3)">🔮 Predict</span></span>
-        <span style="color:rgba(255,255,255,0.25);font-size:12px">${m.sc}/11</span>
-        <span class="bebas" style="font-size:22px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${m.pts}</span>
-        <span style="color:rgba(255,255,255,0.25);font-size:12px">pts ▼</span>
+  if(!board.length){el.innerHTML=`<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px;font-weight:700">No managers yet</div>`;return;}
+
+  const miniPlayer=(p)=>!p?"":
+    `<div onclick="event.stopPropagation();showPlayerModal('${p.id}')" style="text-align:center;cursor:pointer;min-width:48px">
+      ${p.photo_url
+        ?`<img src="${e(p.photo_url)}" style="width:40px;height:40px;border-radius:50%;object-fit:contain;border:2px solid rgba(255,255,255,0.25);display:block;margin:0 auto 2px">`
+        :`<div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;margin:0 auto 2px">${FL[p.country]||"?"}</div>`}
+      <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.75);white-space:nowrap;overflow:hidden;max-width:48px;text-overflow:ellipsis">${e(p.name.split(" ")[0])}</div>
+    </div>`;
+
+  el.innerHTML=board.map((m,i)=>{
+    const benchIds=Array.isArray(bn)?bn.filter(b=>b.manager_id===m.id).map(b=>b.player_id):[];
+    const byPos={GK:[],DEF:[],MID:[],ATT:[]};
+    m.ids.forEach(pid=>{const p=players.find(x=>x.id===pid);if(p&&byPos[p.position])byPos[p.position].push(p);});
+    return`<div>
+      <div class="lb-row ${i===0?"gold":""} ${i<3?"podium-"+(i+1):""}" onclick="toggleLB('lbs-${m.id}')">
+        <span class="bebas" style="font-size:24px;width:32px;text-align:center;color:${cols[i]||"rgba(255,255,255,0.2)"}">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
+        <span style="flex:1;font-weight:800;cursor:pointer" onclick="event.stopPropagation();showManagerModal('${m.id}','${m.username}')">${e(m.username)} <span style="font-size:11px;color:rgba(255,255,255,0.3)">🔮</span></span>
+        <span style="font-size:13px;margin-right:4px">${FL[m.supported_country]||""}</span>
+        <span class="bebas" style="font-size:22px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${m.pts} pts</span>
+        <span style="color:rgba(255,255,255,0.3);font-size:12px;margin-left:4px">▼</span>
       </div>
-      <div id="lbs-${m.id}" class="lb-squad">
-        <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:10px;font-weight:700">ÉQUIPE DE ${e(m.username).toUpperCase()}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${!m.ids.length?`<span style="color:rgba(255,255,255,0.2);font-size:13px">Équipe non constituée</span>`:m.ids.map(pid=>{
-            const p=players.find(x=>x.id===pid);if(!p)return"";
-            return`<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;cursor:pointer" onclick="showPlayerModal('${p.id}')">
-              ${p.photo_url?`<img src="${e(p.photo_url)}" style="width:22px;height:22px;border-radius:50%;object-fit:contain">`:`<span>${FL[p.country]}</span>`}
-              <span style="font-size:12px;font-weight:700">${e(p.name)}</span>
-              <span class="pos pos-${p.position}" style="font-size:9px">${p.position}</span>
-            </div>`;
-          }).join("")}
-        </div>
+      <div id="lbs-${m.id}" class="lb-squad" style="display:none">
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:10px;font-weight:700;letter-spacing:1px">${e(m.username).toUpperCase()} · ${m.ids.length}/11 starters</div>
+        ${!m.ids.length
+          ?`<div style="color:rgba(255,255,255,0.2);font-size:13px;text-align:center;padding:10px">No team yet</div>`
+          :`<div style="background:linear-gradient(180deg,#14532d,#166534,#14532d);border-radius:10px;padding:12px 6px;margin-bottom:10px;position:relative">
+            <div style="position:absolute;top:50%;left:8%;right:8%;height:1px;background:rgba(255,255,255,0.12)"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:1px solid rgba(255,255,255,0.12)"></div>
+            ${["ATT","MID","DEF","GK"].map(pos=>`
+              <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+                ${byPos[pos].map(p=>miniPlayer(p)).join("")}
+              </div>`).join("")}
+          </div>
+          ${benchIds.length?`<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px">
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;margin-bottom:6px">🪑 BENCH</div>
+            <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+              ${benchIds.map(pid=>miniPlayer(players.find(x=>x.id===pid))).join("")}
+            </div>
+          </div>`:""}
+        `}
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 function toggleLB(id){const el=document.getElementById(id);el.style.display=el.style.display==="none"||!el.style.display?"block":"none";}
 
