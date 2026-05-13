@@ -2026,17 +2026,26 @@ async function renderAdmStats(reload=false){
 }
 
 let eventAdminFilter="";
+let eventAdminPos="Tous";
 function renderEventAdmin(){
   const el=document.getElementById("adm-stats");
-  const filtered=players.filter(p=>!eventAdminFilter||p.name.toLowerCase().includes(eventAdminFilter.toLowerCase())||p.country===eventAdminFilter);
+  const filtered=players.filter(p=>{
+    const matchCountry=!eventAdminFilter||p.name.toLowerCase().includes(eventAdminFilter.toLowerCase())||p.country===eventAdminFilter;
+    const matchPos=eventAdminPos==="Tous"||p.position===eventAdminPos;
+    return matchCountry&&matchPos;
+  });
 
   el.innerHTML=`
-    <div style="margin-bottom:14px">
+    <div style="margin-bottom:10px">
       <input class="input" placeholder="🔍 Search player..." oninput="eventAdminFilter=this.value;renderEventAdmin()" value="${eventAdminFilter}">
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
       ${[{k:"",l:"🌍"},...C.map(c=>({k:c,l:FL[c]||c}))].map(({k,l})=>`
         <button class="ftab ${eventAdminFilter===k?"on":""}" onclick="eventAdminFilter='${k}';renderEventAdmin()">${l}</button>`).join("")}
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      ${["Tous","GK","DEF","MID","ATT"].map(pos=>`
+        <button class="ftab ${eventAdminPos===pos?"on":""}" onclick="eventAdminPos='${pos}';renderEventAdmin()">${pos==="Tous"?"All":pos}</button>`).join("")}
     </div>
     <div style="display:grid;gap:8px">
       ${filtered.map(p=>{
