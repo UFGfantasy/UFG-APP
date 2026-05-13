@@ -553,10 +553,10 @@ async function init(){
   ]);
   players=Array.isArray(p)?p:[];
   matches=Array.isArray(m)?m:[];
+  // Try restore session BEFORE showing app
+  const restored=await restoreSession();
   document.getElementById("loader").style.display="none";
   document.getElementById("app").style.display="block";
-  // Try restore session
-  const restored=await restoreSession();
   if(restored) go("squad");
   loadTop5();
   setTimeout(startCountdown, 100);
