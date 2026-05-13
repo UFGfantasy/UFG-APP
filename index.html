@@ -946,7 +946,8 @@ function renderPlayerList(){
     const cnt=(byPos[p.position]||[]).length;
     let dis=false;
     if(selectingBench){
-      dis=p.position!==selectingBench||onBench||sel;
+      const countryFull=!onBench&&!sel&&countryCount(p.country)>=3;
+      dis=p.position!==selectingBench||onBench||sel||countryFull;
     } else {
       const posLimitReached=!sel&&cnt>=SR[p.position];
       // Recalculate country count excluding this player if already selected
@@ -954,7 +955,7 @@ function renderPlayerList(){
       const countryLimitReached=!sel&&cCount>=3;
       dis=(posLimitReached||countryLimitReached)&&!onBench;
     }
-    const highlight=selectingBench&&p.position===selectingBench&&!onBench&&!sel;
+    const highlight=selectingBench&&p.position===selectingBench&&!onBench&&!sel&&countryCount(p.country)<3;
     return`<div class="player-row ${sel?"selected":""} ${onBench?"on-bench":""} ${dis?"disabled":""}" onclick="toggleP('${p.id}')" style="${highlight?"border-color:rgba(255,165,0,0.5);background:rgba(255,165,0,0.08)":""}">
       ${p.photo_url?`<img class="player-avatar" src="${e(p.photo_url)}" loading="lazy">`:`<div class="player-avatar-ph">${FL[p.country]}</div>`}
       <div style="flex:1;min-width:0">
