@@ -200,7 +200,7 @@ select.input option{background:#2d1060;color:#fff}
       <button class="tab" id="n-leaderboard" onclick="go('leaderboard')" title="Standings">🏆 Standings</button>
       <button class="tab" id="n-join" onclick="go('join')" title="Login">🔐 Login</button>
       <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')" title="My Team">🧩 Team</button></span>
-      <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')" title="Predictions">🔮 Picks</button></span>
+      <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')" title="Predictions">🔮 Predict</button></span>
       <button class="tab" id="n-players-standing" onclick="go('players-standing')" title="Players">⭐ Players</button>
       <button class="tab" id="n-rules" onclick="go('rules')" title="Rules">📋 Rules</button>
       <button class="tab" id="n-admin" onclick="go('admin')" style="margin-left:auto">⚙️</button>
@@ -396,11 +396,11 @@ select.input option{background:#2d1060;color:#fff}
         <button class="btn btn-sm" onclick="admLogout()" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:13px">Logout</button>
       </div>
       <div class="filter-row" style="margin-bottom:20px">
-        <button class="ftab on" id="at-players" onclick="admTab('players')">👥 Players</button>
-        <button class="ftab" id="at-dashboard" onclick="admTab('dashboard')">📊 Dashboard</button>
-        <button class="ftab" id="at-lineups" onclick="admTab('lineups')">📋 Lineups</button>
-        <button class="ftab" id="at-stats" onclick="admTab('stats')">📊 Stats</button>
+        <button class="ftab on" id="at-stats" onclick="admTab('stats')">📊 Stats</button>
         <button class="ftab" id="at-results" onclick="admTab('results')">🏁 Results</button>
+        <button class="ftab" id="at-lineups" onclick="admTab('lineups')">📋 Lineups</button>
+        <button class="ftab" id="at-players" onclick="admTab('players')">👥 Players</button>
+        <button class="ftab" id="at-dashboard" onclick="admTab('dashboard')">📊 Dashboard</button>
         <button class="ftab" id="at-transfers" onclick="admTab('transfers')">🔄 Transfers</button>
       </div>
       <div id="adm-players"></div>
@@ -1250,7 +1250,7 @@ async function loadLB(){
     <div>
       <div class="lb-row ${i===0?"gold":""}" onclick="toggleLB('lbs-${m.id}')">
         <span class="bebas" style="font-size:26px;width:32px;text-align:center;color:${cols[i]||"rgba(255,255,255,0.2)"}">${i+1}</span>
-        <span style="flex:1;font-weight:800;cursor:pointer" onclick="event.stopPropagation();showManagerModal('${m.id}','${m.username}')">${e(m.username)} <span style="font-size:11px;color:rgba(255,255,255,0.3)">🔮 Picks</span></span>
+        <span style="flex:1;font-weight:800;cursor:pointer" onclick="event.stopPropagation();showManagerModal('${m.id}','${m.username}')">${e(m.username)} <span style="font-size:11px;color:rgba(255,255,255,0.3)">🔮 Predict</span></span>
         <span style="color:rgba(255,255,255,0.25);font-size:12px">${m.sc}/11</span>
         <span class="bebas" style="font-size:22px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${m.pts}</span>
         <span style="color:rgba(255,255,255,0.25);font-size:12px">pts ▼</span>
@@ -1309,7 +1309,7 @@ function doAdmLogin(){
     try{localStorage.setItem('ufg_admin','1');}catch(e){}
     document.getElementById("adm-login").style.display="none";
     document.getElementById("adm-panel").style.display="block";
-    renderAdmPlayers();
+    admTab('stats');
   } else {
     er.textContent="Wrong password";er.style.display="block";
   }
@@ -1333,6 +1333,17 @@ function admTab(t){
   if(t==="stats")renderAdmStats(true);
   if(t==="results")renderAdmResults();
   if(t==="transfers")renderAdmTransfers();
+}
+
+function restoreAdminSession(){
+  try{
+    if(localStorage.getItem('ufg_admin')==='1'){
+      admIn=true;
+      document.getElementById("adm-login").style.display="none";
+      document.getElementById("adm-panel").style.display="block";
+      admTab('stats');
+    }
+  }catch(e){}
 }
 
 // EDIT PLAYER MODAL
@@ -2224,7 +2235,7 @@ async function showManagerModal(managerId, username){
   el.innerHTML = `
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:3px">${e(username)}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">🔮 Picks</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">🔮 Predict</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
       <div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px;text-align:center">
