@@ -197,12 +197,12 @@ select.input option{background:#2d1060;color:#fff}
       <div class="nav-logo" onclick="go('home')">
         <img src="https://yptriimymqdhqigxsfrk.supabase.co/storage/v1/object/public/players/ufg-logo-v2.png" style="height:36px;width:auto;mix-blend-mode:lighten"><div class="nav-logo-text">UFG FANTASY 2026</div>
       </div>
-      <button class="tab" id="n-leaderboard" onclick="go('leaderboard')" title="Standings">🏆</button>
-      <button class="tab" id="n-join" onclick="go('join')" title="Login">🔐</button>
-      <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')" title="My Team">🧩</button></span>
-      <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')" title="Predictions">🔮</button></span>
-      <button class="tab" id="n-players-standing" onclick="go('players-standing')" title="Players">⭐</button>
-      <button class="tab" id="n-rules" onclick="go('rules')" title="Rules">📋</button>
+      <button class="tab" id="n-leaderboard" onclick="go('leaderboard')" title="Standings">🏆 Standings</button>
+      <button class="tab" id="n-join" onclick="go('join')" title="Login">🔐 Login</button>
+      <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')" title="My Team">🧩 Team</button></span>
+      <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')" title="Predictions">🔮 Picks</button></span>
+      <button class="tab" id="n-players-standing" onclick="go('players-standing')" title="Players">⭐ Players</button>
+      <button class="tab" id="n-rules" onclick="go('rules')" title="Rules">📋 Rules</button>
       <button class="tab" id="n-admin" onclick="go('admin')" style="margin-left:auto">⚙️</button>
     </div>
   </div>
@@ -664,7 +664,11 @@ function go(name){
   if(name==="pronostics")loadPros();
   if(name==="leaderboard"){loadLB();loadAnnouncement();}
   if(name==="home"){loadTop5();startCountdown();loadAnnouncement();}
-  if(name==="players-standing"){_cache["player_stats"]=null;loadPlayersStanding();}
+  if(name==="players-standing"){
+    _cache["players"]=null;
+    _cache["player_stats"]=null;
+    loadPlayersStanding();
+  }
   if(name==="rules")renderPts();
   if(name==="admin")restoreAdminSession();
 }
@@ -1246,7 +1250,7 @@ async function loadLB(){
     <div>
       <div class="lb-row ${i===0?"gold":""}" onclick="toggleLB('lbs-${m.id}')">
         <span class="bebas" style="font-size:26px;width:32px;text-align:center;color:${cols[i]||"rgba(255,255,255,0.2)"}">${i+1}</span>
-        <span style="flex:1;font-weight:800;cursor:pointer" onclick="event.stopPropagation();showManagerModal('${m.id}','${m.username}')">${e(m.username)} <span style="font-size:11px;color:rgba(255,255,255,0.3)">🔮</span></span>
+        <span style="flex:1;font-weight:800;cursor:pointer" onclick="event.stopPropagation();showManagerModal('${m.id}','${m.username}')">${e(m.username)} <span style="font-size:11px;color:rgba(255,255,255,0.3)">🔮 Picks</span></span>
         <span style="color:rgba(255,255,255,0.25);font-size:12px">${m.sc}/11</span>
         <span class="bebas" style="font-size:22px;background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${m.pts}</span>
         <span style="color:rgba(255,255,255,0.25);font-size:12px">pts ▼</span>
@@ -2220,7 +2224,7 @@ async function showManagerModal(managerId, username){
   el.innerHTML = `
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:3px">${e(username)}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">🔮</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">🔮 Picks</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
       <div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px;text-align:center">
