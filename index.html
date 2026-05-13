@@ -666,6 +666,7 @@ function go(name){
   if(name==="home"){loadTop5();startCountdown();loadAnnouncement();}
   if(name==="players-standing")loadPlayersStanding();
   if(name==="rules")renderPts();
+  if(name==="admin")restoreAdminSession();
 }
 
 // Preload players in background after init
@@ -1269,13 +1270,46 @@ function toggleLB(id){const el=document.getElementById(id);el.style.display=el.s
 
 // ADMIN
 let admIn=false;
+function admLogin(){
+  const pw=document.getElementById("adm-pw").value;
+  if(pw===APW){
+    admIn=true;
+    try{localStorage.setItem('ufg_admin','1');}catch(e){}
+    document.getElementById("adm-login").style.display="none";
+    document.getElementById("adm-panel").style.display="block";
+    renderAdmPlayers();
+  } else {
+    alert("Wrong password!");
+  }
+}
+function admLogout(){
+  admIn=false;
+  try{localStorage.removeItem('ufg_admin');}catch(e){}
+  document.getElementById("adm-login").style.display="block";
+  document.getElementById("adm-panel").style.display="none";
+}
+function restoreAdminSession(){
+  try{
+    if(localStorage.getItem('ufg_admin')==='1'){
+      admIn=true;
+      document.getElementById("adm-login").style.display="none";
+      document.getElementById("adm-panel").style.display="block";
+    }
+  }catch(e){}
+}
 function doAdmLogin(){
   const pw=document.getElementById("adm-pw").value;
   const er=document.getElementById("adm-err");
-  if(pw===APW){admIn=true;document.getElementById("adm-login").style.display="none";document.getElementById("adm-panel").style.display="block";renderAdmPlayers();}
-  else{er.textContent="Wrong password";er.style.display="block";}
+  if(pw===APW){
+    admIn=true;
+    try{localStorage.setItem('ufg_admin','1');}catch(e){}
+    document.getElementById("adm-login").style.display="none";
+    document.getElementById("adm-panel").style.display="block";
+    renderAdmPlayers();
+  } else {
+    er.textContent="Wrong password";er.style.display="block";
+  }
 }
-function admLogout(){admIn=false;document.getElementById("adm-login").style.display="block";document.getElementById("adm-panel").style.display="none";}
 function logout(){
   mgr=null;squad=[];bench=[];
   try{localStorage.removeItem('ufg_mgr_id');}catch(e){}
