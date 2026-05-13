@@ -197,12 +197,12 @@ select.input option{background:#2d1060;color:#fff}
       <div class="nav-logo" onclick="go('home')">
         <img src="https://yptriimymqdhqigxsfrk.supabase.co/storage/v1/object/public/players/ufg-logo-v2.png" style="height:36px;width:auto;mix-blend-mode:lighten"><div class="nav-logo-text">UFG FANTASY 2026</div>
       </div>
-      <button class="tab" id="n-leaderboard" onclick="go('leaderboard')">🏆 Standings</button>
-      <button class="tab" id="n-join" onclick="go('join')">🔐 Login</button>
-      <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')">🧩 My Team</button></span>
-      <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')">🔮 Predictions</button></span>
-      <button class="tab" id="n-players-standing" onclick="go('players-standing')">⭐ Players</button>
-      <button class="tab" id="n-rules" onclick="go('rules')">📋 Rules</button>
+      <button class="tab" id="n-leaderboard" onclick="go('leaderboard')" title="Standings">🏆</button>
+      <button class="tab" id="n-join" onclick="go('join')" title="Login">🔐</button>
+      <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')" title="My Team">🧩</button></span>
+      <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')" title="Predictions">🔮</button></span>
+      <button class="tab" id="n-players-standing" onclick="go('players-standing')" title="Players">⭐</button>
+      <button class="tab" id="n-rules" onclick="go('rules')" title="Rules">📋</button>
       <button class="tab" id="n-admin" onclick="go('admin')" style="margin-left:auto">⚙️</button>
     </div>
   </div>
@@ -557,7 +557,7 @@ async function init(){
   const restored=await restoreSession();
   document.getElementById("loader").style.display="none";
   document.getElementById("app").style.display="block";
-  if(restored) go("squad");
+  if(restored){go("squad");}
   loadTop5();
   setTimeout(startCountdown, 100);
   loadAnnouncement();
@@ -664,7 +664,7 @@ function go(name){
   if(name==="pronostics")loadPros();
   if(name==="leaderboard"){loadLB();loadAnnouncement();}
   if(name==="home"){loadTop5();startCountdown();loadAnnouncement();}
-  if(name==="players-standing")loadPlayersStanding();
+  if(name==="players-standing"){_cache["player_stats"]=null;loadPlayersStanding();}
   if(name==="rules")renderPts();
   if(name==="admin")restoreAdminSession();
 }
@@ -2220,7 +2220,7 @@ async function showManagerModal(managerId, username){
   el.innerHTML = `
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:3px">${e(username)}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">🔮 Predictions</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">🔮</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
       <div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px;text-align:center">
