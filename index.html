@@ -244,6 +244,15 @@ select.input option{background:#2d1060;color:#fff}
         </div>
         <input class="input" id="j-input" placeholder="Your username" style="margin-bottom:12px" onkeydown="if(event.key==='Enter')doJoin()">
         <input class="input" type="email" id="j-email" placeholder="Your email" style="margin-bottom:12px;display:none" onkeydown="if(event.key==='Enter')doJoin()">
+        <div id="j-rgpd-wrap" style="display:none;margin-bottom:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" id="j-rgpd" style="width:18px;height:18px;margin-top:2px;accent-color:var(--orange);cursor:pointer;flex-shrink:0">
+            <span style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5">
+              I agree that my data (username, email) will be used <strong>only for UFG Fantasy 2026</strong> and deleted after the tournament (July 5, 2026). 
+              <span style="color:rgba(255,255,255,0.3)">— GDPR compliance</span>
+            </span>
+          </label>
+        </div>
         <input class="input" type="password" id="j-pw" placeholder="Password" style="margin-bottom:12px" onkeydown="if(event.key==='Enter')doJoin()">
         <div id="j-country-wrap" style="display:none;margin-bottom:16px">
           <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:8px;letter-spacing:1px">🌍 WHICH COUNTRY DO YOU SUPPORT?</div>
@@ -708,6 +717,8 @@ function setMode(m){
   document.getElementById("j-btn").textContent=m==="create"?"CREATE & PLAY":"ENTRER";
   document.getElementById("j-err").style.display="none";
   document.getElementById("j-email").style.display=m==="create"?"block":"none";
+  document.getElementById("j-rgpd-wrap").style.display=m==="create"?"block":"none";
+  if(m==="create")document.getElementById("j-rgpd").checked=false;
   document.getElementById("j-country-wrap").style.display=m==="create"?"block":"none";
   if(m==="create") renderCountryPicker();
   selectedCountry=null;
@@ -743,6 +754,7 @@ async function doJoin(){
   try{
     if(jmode==="create"){
       if(!email||!email.includes("@")){errel.textContent="Enter a valid email";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
+      if(!document.getElementById("j-rgpd")?.checked){errel.textContent="Please accept the data usage policy";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
       if(!selectedCountry){errel.textContent="Choose a country to support!";errel.style.display="block";btn.textContent="CREATE & PLAY";btn.disabled=false;return;}
       // Check username not taken
       const ex=await get("managers",{select:"id",eq:{username:name}});
