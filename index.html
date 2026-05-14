@@ -1326,7 +1326,6 @@ function admLogin(){
   const pw=document.getElementById("adm-pw").value;
   if(pw===APW){
     admIn=true;
-    try{localStorage.setItem('ufg_admin','1');}catch(e){}
     document.getElementById("adm-login").style.display="none";
     document.getElementById("adm-panel").style.display="block";
     renderAdmPlayers();
@@ -1340,15 +1339,6 @@ function admLogout(){
   document.getElementById("adm-login").style.display="block";
   document.getElementById("adm-panel").style.display="none";
 }
-function restoreAdminSession(){
-  try{
-    if(localStorage.getItem('ufg_admin')==='1'){
-      admIn=true;
-      document.getElementById("adm-login").style.display="none";
-      document.getElementById("adm-panel").style.display="block";
-    }
-  }catch(e){}
-}
 async function doAdmLogin(){
   const pw=document.getElementById("adm-pw").value;
   const er=document.getElementById("adm-err");
@@ -1360,7 +1350,6 @@ async function doAdmLogin(){
   const storedHash=Array.isArray(res)&&res[0]?.value?res[0].value:"";
   if(hashed===storedHash){
     admIn=true;
-    try{localStorage.setItem('ufg_admin','1');}catch(e){}
     document.getElementById("adm-login").style.display="none";
     document.getElementById("adm-panel").style.display="block";
     admTab('stats');
@@ -1390,14 +1379,8 @@ function admTab(t){
 }
 
 function restoreAdminSession(){
-  try{
-    if(localStorage.getItem('ufg_admin')==='1'){
-      admIn=true;
-      document.getElementById("adm-login").style.display="none";
-      document.getElementById("adm-panel").style.display="block";
-      admTab('stats');
-    }
-  }catch(e){}
+  // Always require password for admin - no persistent session
+  try{localStorage.removeItem('ufg_admin');}catch(e){}
 }
 
 // EDIT PLAYER MODAL
