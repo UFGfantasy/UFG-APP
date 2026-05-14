@@ -431,7 +431,7 @@ select.input option{background:#2d1060;color:#fff}
 <script>
 const SB="https://yptriimymqdhqigxsfrk.supabase.co";
 const K="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdHJpaW15bXFkaHFpZ3hzZnJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMDg5MDYsImV4cCI6MjA5MzU4NDkwNn0.0vUIQrsTsmghjtkrfEAdXRDSyFJL78H9jGBYy0CvmJY";
-const APW="admin2024";
+// Admin password stored securely in Supabase
 const C=["France","Angleterre","Espagne","Italie","Hongrie","Allemagne"];
 const P=["GK","DEF","MID","ATT"];
 const SR={GK:1,DEF:4,MID:3,ATT:3};
@@ -1349,10 +1349,16 @@ function restoreAdminSession(){
     }
   }catch(e){}
 }
-function doAdmLogin(){
+async function doAdmLogin(){
   const pw=document.getElementById("adm-pw").value;
   const er=document.getElementById("adm-err");
-  if(pw===APW){
+  er.style.display="none";
+  if(!pw){er.textContent="Enter password";er.style.display="block";return;}
+  // Hash the password and check against Supabase
+  const hashed=await hashPassword(pw);
+  const res=await get("app_settings",{select:"value",eq:{key:"admin_pw_hash"}});
+  const storedHash=Array.isArray(res)&&res[0]?.value?res[0].value:"";
+  if(hashed===storedHash){
     admIn=true;
     try{localStorage.setItem('ufg_admin','1');}catch(e){}
     document.getElementById("adm-login").style.display="none";
