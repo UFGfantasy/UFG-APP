@@ -519,7 +519,7 @@ const ups=(t,d,c)=>req("POST","/rest/v1/"+t+"?on_conflict="+c,d,"return=represen
 const pat=(t,d,eq)=>{let q="?";Object.entries(eq).forEach(([k,v])=>q+=k+"=eq."+encodeURIComponent(v)+"&");return req("PATCH","/rest/v1/"+t+q,d,"return=representation");};
 const del=(t,eq)=>{let q="?";Object.entries(eq).forEach(([k,v])=>q+=k+"=eq."+encodeURIComponent(v)+"&");return req("DELETE","/rest/v1/"+t+q);};
 
-const CLOUDINARY_CLOUD="kenko";
+const CLOUDINARY_CLOUD="dfcbfkffs";
 const CLOUDINARY_UPLOAD_PRESET="ufg_fantasy"; // unsigned preset to create
 
 async function upload(file,path){
