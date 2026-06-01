@@ -202,6 +202,7 @@ select.input option{background:#2d1060;color:#fff}
       <span id="n-squad-w" style="display:none"><button class="tab" id="n-squad" onclick="go('squad')" title="My Team">🧩 Team</button></span>
       <span id="n-pro-w" style="display:none"><button class="tab" id="n-pronostics" onclick="go('pronostics')" title="Predictions">🔮 Predict</button></span>
       <button class="tab" id="n-players-standing" onclick="go('players-standing')" title="Players">⭐ Players</button>
+      <button class="tab" id="n-schedule" onclick="go('schedule')" title="Schedule">📅 Schedule</button>
       <button class="tab" id="n-rules" onclick="go('rules')" title="Rules">📋 Rules</button>
       <button class="tab" id="n-admin" onclick="go('admin')" style="margin-left:auto">⚙️</button>
     </div>
@@ -707,6 +708,7 @@ function go(name){
     _cache["player_stats"]=null;
     loadPlayersStanding();
   }
+  if(name==="schedule"){}
   if(name==="rules")renderPts();
   if(name==="admin")restoreAdminSession();
 }
