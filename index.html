@@ -1140,9 +1140,9 @@ async function toggleP(pid){
 
 // PREDICTIONS
 async function loadPros(){
-  // Check if predictions are open
-  const settings=await get("app_settings",{select:"*",eq:{key:"predictions_open"}});
-  predictionsOpen=Array.isArray(settings)&&settings[0]?.value!=="false";
+  // Always fetch fresh predictions_open status
+  const settings=await fetch(`${SB}/rest/v1/app_settings?key=eq.predictions_open&select=value`,{headers:{"apikey":K,"Content-Type":"application/json"}}).then(r=>r.json());
+  predictionsOpen=!Array.isArray(settings)||!settings[0]||settings[0].value!=="false";
   if(!mgr){go("join");return;}
   const[res,mt]=await Promise.all([get("pronostics",{select:"*",eq:{manager_id:mgr.id}}),get("matches",{select:"*",order:"match_date"})]);
   pros={};if(Array.isArray(res))res.forEach(p=>pros[p.match_id]={prediction:p.prediction,home_score:p.home_score,away_score:p.away_score,locked:p.home_score!=null&&p.away_score!=null});
@@ -1259,6 +1259,7 @@ function setScore(mid,side,val){
   scoreBuffer[mid][side]=parseInt(val);
 }
 async function confirmPro(mid){
+  if(!predictionsOpen){showMsg("🔒 Predictions are closed!");return;}
   const buf=scoreBuffer[mid]||{};
   // get values from inputs
   const card=document.querySelector(`[data-mid="${mid}"]`);
