@@ -2287,11 +2287,30 @@ async function renderAdmTransfers(){
       <button onclick="toggleTransfers(${!isOpen})" style="padding:14px 32px;border-radius:10px;border:none;background:${isOpen?"linear-gradient(135deg,#ef4444,#dc2626)":"linear-gradient(135deg,#10b981,#059669)"};color:#fff;font-family:'Bebas Neue';font-size:18px;letter-spacing:2px;cursor:pointer;width:100%">
         ${isOpen?"🔴 CLOSE TRANSFER WINDOW":"🟢 OPEN TRANSFER WINDOW"}
       </button>
-    </div>`;
+    </div>
+
+    <div class="glass-dark" style="padding:24px;text-align:center;margin-top:16px">
+      <div class="bebas" style="font-size:24px;margin-bottom:8px;letter-spacing:2px">🔮 PREDICTIONS</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px">
+        Close predictions before each match starts
+      </div>
+      <div style="background:${predsOpen?"rgba(16,185,129,0.15)":"rgba(239,68,68,0.1)"};border:1px solid ${predsOpen?"rgba(16,185,129,0.4)":"rgba(239,68,68,0.3)"};border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="font-family:'Bebas Neue';font-size:28px;color:${predsOpen?"#10b981":"#ef4444"}">${predsOpen?"🟢 OPEN":"🔴 CLOSED"}</div>
+      </div>
+      <button onclick="togglePredictions(${!predsOpen})" style="padding:14px 32px;border-radius:10px;border:none;background:${predsOpen?"linear-gradient(135deg,#ef4444,#dc2626)":"linear-gradient(135deg,#10b981,#059669)"};color:#fff;font-family:'Bebas Neue';font-size:18px;letter-spacing:2px;cursor:pointer;width:100%">
+        ${predsOpen?"🔴 CLOSE PREDICTIONS":"🟢 OPEN PREDICTIONS"}
+      </button>
+    </div>\`;
 }
 
 async function toggleTransfers(open){
   await ups("app_settings",{key:"transfers_open",value:open?"true":"false"},"key");
+  renderAdmTransfers();
+}
+
+async function togglePredictions(open){
+  await ups("app_settings",{key:"predictions_open",value:open?"true":"false"},"key");
+  predictionsOpen=open;
   renderAdmTransfers();
 }
 
