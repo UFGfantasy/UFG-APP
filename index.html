@@ -496,7 +496,7 @@ const PTS={
 };
 const FORMATION={GK:[0],DEF:[1,2,3,4],MID:[5,6,7],ATT:[8,9,10]};
 
-let players=[],matches=[],squad=[],bench=[],pros={},mgr=null,transfersOpen=false;
+let players=[],matches=[],squad=[],bench=[],pros={},mgr=null,transfersOpen=false,predictionsOpen=true;
 
 async function hashPassword(pw){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
@@ -1140,11 +1140,17 @@ async function toggleP(pid){
 
 // PREDICTIONS
 async function loadPros(){
+  // Check if predictions are open
+  const settings=await get("app_settings",{select:"*",eq:{key:"predictions_open"}});
+  predictionsOpen=Array.isArray(settings)&&settings[0]?.value!=="false";
   if(!mgr){go("join");return;}
   const[res,mt]=await Promise.all([get("pronostics",{select:"*",eq:{manager_id:mgr.id}}),get("matches",{select:"*",order:"match_date"})]);
   pros={};if(Array.isArray(res))res.forEach(p=>pros[p.match_id]={prediction:p.prediction,home_score:p.home_score,away_score:p.away_score,locked:p.home_score!=null&&p.away_score!=null});
   matches=Array.isArray(mt)?mt:[];
   renderPros();
+  // Show/hide locked banner
+  const banner=document.getElementById("predictions-locked-banner");
+  if(banner)banner.style.display=predictionsOpen?"none":"block";
 }
 function fmtDate(d){
   if(!d)return"";
@@ -2262,8 +2268,12 @@ async function saveRes(mid){
 }
 
 async function renderAdmTransfers(){
-  const res=await get("app_settings",{select:"*",eq:{key:"transfers_open"}});
+  const [res, predRes]=await Promise.all([
+    get("app_settings",{select:"*",eq:{key:"transfers_open"}}),
+    get("app_settings",{select:"*",eq:{key:"predictions_open"}})
+  ]);
   const isOpen=Array.isArray(res)&&res[0]?.value==="true";
+  const predsOpen=Array.isArray(predRes)&&predRes[0]?.value!=="false";
   const el=document.getElementById("adm-transfers");
   el.innerHTML=`
     <div class="glass-dark" style="padding:24px;text-align:center">
