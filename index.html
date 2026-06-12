@@ -462,7 +462,7 @@ select.input option{background:#2d1060;color:#fff}
 const SB="https://yptriimymqdhqigxsfrk.supabase.co";
 const K="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdHJpaW15bXFkaHFpZ3hzZnJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMDg5MDYsImV4cCI6MjA5MzU4NDkwNn0.0vUIQrsTsmghjtkrfEAdXRDSyFJL78H9jGBYy0CvmJY";
 // Admin password stored securely in Supabase
-const C=["France","Angleterre","Espagne","Italie","Allemagne"];
+const C=["France","England","Spain","Italy","Germany"];
 const P=["GK","DEF","MID","ATT"];
 const SR={GK:1,DEF:4,MID:3,ATT:3};
 const BR={GK:1,DEF:1,MID:1,ATT:1}; // bench rules
@@ -471,11 +471,11 @@ const TOTAL_BENCH=4;
 const TOTAL_SQUAD=15;
 const FL={
   France:'<img src="https://flagcdn.com/24x18/fr.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
-  Angleterre:'<img src="https://flagcdn.com/24x18/gb-eng.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
-  Espagne:'<img src="https://flagcdn.com/24x18/es.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
-  Italie:'<img src="https://flagcdn.com/24x18/it.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
+  England:'<img src="https://flagcdn.com/24x18/gb-eng.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
+  Spain:'<img src="https://flagcdn.com/24x18/es.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
+  Italy:'<img src="https://flagcdn.com/24x18/it.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">',
 
-  Allemagne:'<img src="https://flagcdn.com/24x18/de.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">'
+  Germany:'<img src="https://flagcdn.com/24x18/de.png" style="width:24px;height:18px;border-radius:2px;vertical-align:middle">'
 };
 // CSHORT removed, using FL directly
 const PC={GK:"var(--gk)",DEF:"var(--def)",MID:"var(--mid)",ATT:"var(--att)"};
@@ -724,11 +724,11 @@ async function preloadData(){
 // JOIN
 const FL2={
   France:'<img src="https://flagcdn.com/48x36/fr.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
-  Angleterre:'<img src="https://flagcdn.com/48x36/gb-eng.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
-  Espagne:'<img src="https://flagcdn.com/48x36/es.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
-  Italie:'<img src="https://flagcdn.com/48x36/it.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
+  England:'<img src="https://flagcdn.com/48x36/gb-eng.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
+  Spain:'<img src="https://flagcdn.com/48x36/es.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
+  Italy:'<img src="https://flagcdn.com/48x36/it.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">',
 
-  Allemagne:'<img src="https://flagcdn.com/48x36/de.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">'
+  Germany:'<img src="https://flagcdn.com/48x36/de.png" style="width:32px;height:24px;border-radius:3px;vertical-align:middle">'
 };
 let selectedCountry=null;
 function setMode(m){
@@ -746,8 +746,8 @@ function setMode(m){
   selectedCountry=null;
 }
 function renderCountryPicker(){
-  const C2=["France","Angleterre","Espagne","Italie","Allemagne"];
-  const EN={"France":"France","Angleterre":"England","Espagne":"Spain","Italie":"Italy","Allemagne":"Germany"};
+  const C2=["France","England","Spain","Italy","Germany"];
+  const EN={"France":"France","England":"England","Spain":"Spain","Italy":"Italy","Germany":"Germany"};
   document.getElementById("j-countries").innerHTML=C2.map(c=>`
     <button onclick="pickCountry('${c}',this)" style="padding:10px 6px;border-radius:10px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#fff;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;transition:all .15s;text-align:center">
       <div style="margin-bottom:4px">${FL2[c]}</div>
@@ -1433,7 +1433,7 @@ function editPlayer(pid){
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;margin-bottom:4px">COUNTRY</div>
           <select class="input" id="edit-country">
-            ${["France","Angleterre","Espagne","Italie","Allemagne"].map(c=>`<option value="${c}" ${p.country===c?"selected":""}>${FL[c]||c} ${c}</option>`).join("")}
+            ${["France","England","Spain","Italy","Germany"].map(c=>`<option value="${c}" ${p.country===c?"selected":""}>${FL[c]||c} ${c}</option>`).join("")}
           </select>
         </div>
         <div>
@@ -2389,7 +2389,7 @@ async function loadPlayersStanding(){
   // Render filters
   document.getElementById("ps-pos-filter").innerHTML=["Tous",...["GK","DEF","MID","ATT"]].map(p=>`
     <button class="ftab ${psPos===p?"on":""}" onclick="psPos='${p}';loadPlayersStanding()">${p==="Tous"?"All":p}</button>`).join("");
-  document.getElementById("ps-country-filter").innerHTML=[{k:"Tous",l:"🌍"},...["France","Angleterre","Espagne","Italie","Allemagne"].map(c=>({k:c,l:FL[c]}))].map(({k,l})=>`
+  document.getElementById("ps-country-filter").innerHTML=[{k:"Tous",l:"🌍"},...["France","England","Spain","Italy","Germany"].map(c=>({k:c,l:FL[c]}))].map(({k,l})=>`
     <button class="ftab ${psCountry===k?"on":""}" onclick="psCountry='${k}';loadPlayersStanding()">${l}</button>`).join("");
 
   const filtered=ranked.filter(p=>
